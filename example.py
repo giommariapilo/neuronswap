@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/gpilo/neuronswap')
+sys.path.append('/path/to/folder/containing/library')
 import torch
 import neuronswap.nswap as ns
 import neuronswap.modulexplore as modx
