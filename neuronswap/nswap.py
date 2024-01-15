@@ -60,18 +60,18 @@ def swap(module_list: list[nn.Module], equilibrium_mask: dict[str, torch.Tensor]
   for i in range(0,len(module_list)):
     name, module = module_list[i]
     if i != len(module_list) - 1 and name not in skip_connections and name in equilibrium_mask.keys():
+      mask = equilibrium_mask[name].int() if type(equilibrium_mask[name]) == torch.Tensor else equilibrium_mask[name]
       if isinstance(module, (nn.Linear, nn.Conv2d)):
-        swap_lin_conv_layers(module, equilibrium_mask[name].int())
+        swap_lin_conv_layers(module, mask)
         _, next_module = module_list[i + 1]
         last_swapped_layer = (name, module)
       elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
         name, module = last_swapped_layer # this is important ... if the current layer is not linerar or convolutional,                                       
-      print(name)                                    # the previous step didn't exchange the inputs
       if isinstance(next_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
-        swap_input_channels(next_module, module, equilibrium_mask[name].int())
+        swap_input_channels(next_module, module, mask)
       elif isinstance(next_module, (nn.BatchNorm2d)):
-        swap_bn_modules(next_module, equilibrium_mask[name].int())
+        swap_bn_modules(next_module, mask)
         _, next_module = module_list[i + 2]
-        swap_input_channels(next_module, module, equilibrium_mask[name].int())
+        swap_input_channels(next_module, module, mask)
 
   return
