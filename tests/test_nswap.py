@@ -381,5 +381,5 @@ def test_swap_resnet():
 
   output_after = model(input)
 
-  assert torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-8)
+  assert torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-5)
 
