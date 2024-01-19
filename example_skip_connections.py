@@ -30,4 +30,4 @@ ns.swap(layers_list, eq_indexes, skip_connections)
 
 output_after = model(input)
 
-print(torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-5))
+print(torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-6))
