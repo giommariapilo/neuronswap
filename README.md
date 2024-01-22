@@ -1,6 +1,6 @@
 # Neuronswap
 
-Simple library to swap neuron positions inside the layers of a model
+This library is intended to be uses in the NEq algorithm to move neurons at equilibrium to the top of the layer so that they can be excluded from gradient computations.
 
 ## Installation
 
