@@ -31,6 +31,8 @@ The expected arguments for `swap` are:
 
 #### Minimal working example
 
+Tested on python 3.10.12
+
 ```python
 import sys
 sys.path.append('/path/to/folder/containing/library')
