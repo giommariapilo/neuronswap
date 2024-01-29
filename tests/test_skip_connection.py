@@ -1,3 +1,5 @@
+import sys
+sys.path.append('..')
 from copy import deepcopy
 import os
 import random as rd
@@ -49,44 +51,43 @@ def generate_random_mask_with_permutation(convs, names):
         permutations[name] = torch.cat([permutation[:num_eq_neurons].sort().values, permutation[num_eq_neurons:].sort().values])
     return random_mask, permutations
 
+def test_skip_connections():
+    set_seed(10)
+    model = resnet18()
+    graph = torch.fx.symbolic_trace(model).graph
+    layers_list = modx.get_layers_list(graph, model)
+    skip_connections = modx.get_skipped_layers(graph, layers_list)
+    convs, names = get_all_conv_ops_with_names(model)
 
-set_seed(10)
-model = resnet18()
-graph = torch.fx.symbolic_trace(model).graph
-layers_list = modx.get_layers_list(graph, model)
-skip_connections = modx.get_skipped_layers(graph, layers_list)
-convs, names = get_all_conv_ops_with_names(model)
+    model.apply(add_input_output_hook)
 
-model.apply(add_input_output_hook)
+    sample_input = torch.randn(1, 3, 128, 128)
 
-sample_input = torch.randn(1, 3, 128, 128)
+    model.train(False)
 
-model.train(False)
+    with torch.no_grad():
+        _ = model(sample_input)
 
-with torch.no_grad():
-    _ = model(sample_input)
-
-pre_swapped_outputs = {}
-for conv, name in zip(convs, names):
-    pre_swapped_outputs[name] = deepcopy(conv.output.view(conv.output.shape[1:]))
+    pre_swapped_outputs = {}
+    for conv, name in zip(convs, names):
+        pre_swapped_outputs[name] = deepcopy(conv.output.view(conv.output.shape[1:]))
 
 
-random_mask, permutations = generate_random_mask_with_permutation(convs, names)
+    random_mask, permutations = generate_random_mask_with_permutation(convs, names)
 
-ns.swap(layers_list, random_mask, skip_connections)
+    ns.swap(layers_list, random_mask, skip_connections)
 
-with torch.no_grad():
-    _ = model(sample_input)
+    with torch.no_grad():
+        _ = model(sample_input)
 
-swapped_outputs = {}
-for conv, name in zip(convs, names):
-    swapped_outputs[name] =  deepcopy(conv.output.view(conv.output.shape[1:]))
+    swapped_outputs = {}
+    for conv, name in zip(convs, names):
+        swapped_outputs[name] =  deepcopy(conv.output.view(conv.output.shape[1:]))
 
-for name in names:
-    if name not in skip_connections:
-        print("****************************")
-        print(f'{name}:')
-        pre_swapped_output = pre_swapped_outputs[name]
-        permutation = permutations[name]
-        manually_swapped_output = pre_swapped_output[permutation]
-        print(torch.allclose(manually_swapped_output, swapped_outputs[name], rtol=1e-5, atol=1e-5))
+    for name in names:
+        if name not in skip_connections:
+            pre_swapped_output = pre_swapped_outputs[name]
+            permutation = permutations[name]
+            manually_swapped_output = pre_swapped_output[permutation]
+            assert torch.allclose(manually_swapped_output, swapped_outputs[name], rtol=1e-5, atol=1e-5), f"{name}'s outputs do not match"
+            

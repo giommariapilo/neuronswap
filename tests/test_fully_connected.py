@@ -1,3 +1,5 @@
+import sys
+sys.path.append('..')
 from copy import deepcopy
 import os
 import random as rd
@@ -62,42 +64,40 @@ def generate_random_mask_with_permutation(linears, names):
         permutations[name] = torch.cat([permutation[:num_eq_neurons].sort().values, permutation[num_eq_neurons:].sort().values])
     return random_mask, permutations
 
+def test_fully_connected_random_swap():
+    set_seed(3)
+    model = FCnet()
+    graph = torch.fx.symbolic_trace(model).graph
+    layers_list = modx.get_layers_list(graph, model)
+    skip_connections = modx.get_skipped_layers(graph, layers_list)
+    linears, names = get_all_linear_ops_with_names(model)
 
-set_seed(3)
-model = FCnet()
-graph = torch.fx.symbolic_trace(model).graph
-layers_list = modx.get_layers_list(graph, model)
-skip_connections = modx.get_skipped_layers(graph, layers_list)
-linears, names = get_all_linear_ops_with_names(model)
+    model.apply(add_input_output_hook)
 
-model.apply(add_input_output_hook)
+    sample_input = torch.rand(5)
 
-sample_input = torch.rand(5)
+    model.train(False)
 
-model.train(False)
+    with torch.no_grad():
+        _ = model(sample_input)
 
-with torch.no_grad():
-    _ = model(sample_input)
+    pre_swapped_outputs = {}
+    for linear, name in zip(linears, names):
+        pre_swapped_outputs[name] = deepcopy(linear.output)
 
-pre_swapped_outputs = {}
-for linear, name in zip(linears, names):
-    pre_swapped_outputs[name] = deepcopy(linear.output)
+    random_mask, permutations = generate_random_mask_with_permutation(linears, names)
 
-random_mask, permutations = generate_random_mask_with_permutation(linears, names)
+    ns.swap(layers_list, random_mask, skip_connections)
 
-ns.swap(layers_list, random_mask, skip_connections)
+    with torch.no_grad():
+        _ = model(sample_input)
 
-with torch.no_grad():
-    _ = model(sample_input)
+    swapped_outputs = {}
+    for linear, name in zip(linears, names):
+        swapped_outputs[name] =  deepcopy(linear.output)
 
-swapped_outputs = {}
-for linear, name in zip(linears, names):
-    swapped_outputs[name] =  deepcopy(linear.output)
-
-for name in names:
-    print("****************************")
-    print(f'{name}:')
-    pre_swapped_output = pre_swapped_outputs[name]
-    permutation = permutations[name]
-    manually_swapped_output = pre_swapped_output[permutation]
-    print(torch.equal(manually_swapped_output, swapped_outputs[name]))
+    for name in names:
+        pre_swapped_output = pre_swapped_outputs[name]
+        permutation = permutations[name]
+        manually_swapped_output = pre_swapped_output[permutation]
+        assert torch.equal(manually_swapped_output, swapped_outputs[name]), f"{name}'s outputs do not match"
