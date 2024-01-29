@@ -1,3 +1,2 @@
-neuronswap/__pycache__/__init__.cpython-310.pyc
-neuronswap/__pycache__/modulexplore.cpython-310.pyc
-neuronswap/__pycache__/nswap.cpython-310.pyc
+neuronswap/__pycache__/*
+neuronswap/tests/__pycache__/*
