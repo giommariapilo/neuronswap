@@ -1,6 +1,6 @@
 # Neuronswap
 
-Simple library to swap neuron positions inside the layers of a model
+This library is intended to be uses in the NEq algorithm to move neurons at equilibrium to the top of the layer so that they can be excluded from gradient computations.
 
 ## Installation
 
@@ -30,6 +30,8 @@ The expected arguments for `swap` are:
 - `skip_connections (list[str])`: List of the names of the layers which are connected to a skip connection layer. These will be prevented from switching. Default is an empty list.
 
 #### Minimal working example
+
+Tested on python 3.10.12
 
 ```python
 import sys
