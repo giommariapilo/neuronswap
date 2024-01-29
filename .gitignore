@@ -1,2 +1,4 @@
-neuronswap/__pycache__/*
-neuronswap/tests/__pycache__/*
+neuronswap/__pycache__/
+tests/__pycache__/
+tests/.pytest_cache/
+

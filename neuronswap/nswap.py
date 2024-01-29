@@ -60,7 +60,7 @@ def swap(module_list: list[nn.Module], equilibrium_mask: dict[str, torch.Tensor]
   for i in range(0,len(module_list)):
     name, module = module_list[i]
     if i != len(module_list) - 1 and name not in skip_connections and name in equilibrium_mask.keys():
-      mask = equilibrium_mask[name].int() if type(equilibrium_mask[name]) == torch.Tensor else equilibrium_mask[name]
+      mask = equilibrium_mask[name].long() if type(equilibrium_mask[name]) == torch.Tensor else equilibrium_mask[name]
       if isinstance(module, (nn.Linear, nn.Conv2d)):
         swap_lin_conv_layers(module, mask)
         _, next_module = module_list[i + 1]
