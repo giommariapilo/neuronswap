@@ -59,8 +59,9 @@ def swap(module_list: list[nn.Module], equilibrium_mask: dict[str, torch.Tensor]
   '''The function takes as inputs the list of layers in the model, a dictionary containing 
   the indexes of the neurons at equilibrium for each layer and an optional list of layers involved in 
   a skip connection. It then modifies each layer putting the weights of each of the equilibrium neurons at the top 
-  of the weight matrix. It then swaps the input channels of the next layer accordingly and performs the same 
-  tranformation for the biases and the parameters of any batch normalization layer related. If a list of the 
+  of the weight matrix. The last layer won't be permutated as it will change the output of the network.
+  It then swaps the input channels of the next layer accordingly and performs the same 
+  transformation for the biases and the parameters of any batch normalization layer related. If a list of the 
   skip connections is passed, the transformation is inhibited for those layers as it is not yet supported.'''
   
   last_swapped_layer = ''
