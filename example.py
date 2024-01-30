@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/path/to/folder/containing/library')
+sys.path.append('/home/gpilo/neuronswap')
 import torch
 import neuronswap.nswap as ns
 import neuronswap.modulexplore as modx
@@ -29,7 +29,21 @@ input = torch.rand(5)
 
 output_before = model(input)
 
+for name, module in model.named_modules():
+  if isinstance(module, (torch.nn.Linear, torch.nn.Conv2d)):
+    print(module.weight.data)
+    print(module.weight.data.shape)
+    print(module.bias.data)
+    print(module.bias.data.shape)
+
 ns.swap(layers_list, eq_indexes)
+
+for name, module in model.named_modules():
+  if isinstance(module, (torch.nn.Linear, torch.nn.Conv2d)):
+    print(module.weight.data)
+    print(module.weight.data.shape)
+    print(module.bias.data)
+    print(module.bias.data.shape)
 
 output_after = model(input)
 
