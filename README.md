@@ -111,3 +111,7 @@ output_after = model(input)
 print(torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-5))
 
 ```
+
+### Usage with permutation matrix
+
+A `permutate_model` function has been added to support usage with permutation matrices. The function works in an analogue way to `swap`, but instead of a dictionary of inputs, it receives a dictionary of permutation matrices associated with each layer. It is also possible to switch single layers using the `permutate` function.
