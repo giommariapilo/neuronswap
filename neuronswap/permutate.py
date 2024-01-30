@@ -36,12 +36,7 @@ def permutate_inputs(module: nn.Module, previous_module: nn.Module, permutation_
     group_dimension = weights.shape[1] // previous_module.weight.data.shape[0] # integer division
     if weights.shape[1] % previous_module.weight.data.shape[0] != 0:
       raise ValueError(f"Incompatible layers: number of neurons of the first layer does not match number of input channels on the second layer\n{weights.shape[1]}%{previous_module.weight.data.shape[0]}={weights.shape[1] % previous_module.weight.data.shape[0]}")
-  # do this but in terms of perm. matrix
-    
-  # indexes = [range(index * group_dimension, index * group_dimension + group_dimension) for index in indexes]
-
-  # using bad bad logic to make it work
-    
+ 
     matrix = torch.zeros(weights.shape[1], weights.shape[1])
 
     indexes = (permutation_matrix==1).nonzero(as_tuple=True)[1]
@@ -62,9 +57,6 @@ def permutate_inputs(module: nn.Module, previous_module: nn.Module, permutation_
     module.weight.data = permutated_weights.reshape(weight_dim)
 
   else:
-    # if group_dimension != 0:
-    #   weights = weights.reshape()
-
     module.weight.data = torch.matmul(weights, matrix)
 
     
@@ -77,24 +69,6 @@ def permutate_bn(module: nn.BatchNorm2d, permutation_matrix: torch.Tensor):
   module.bias.data = torch.matmul(module.bias.data, permutation_matrix)
   module.running_mean.data = torch.matmul(module.running_mean.data, permutation_matrix)
   module.running_var.data = torch.matmul(module.running_var.data, permutation_matrix)
-
-# this version is not as fast as matmul
-
-# def permutate_alt(module: nn.Module, permutation_matrix: torch.Tensor):
-#   '''
-#   This function performs the same operations as permutate but in a different way, using indexes, 
-#   in order to see if it is more performant.
-#   '''
-#   indexes = (permutation_matrix==1).nonzero(as_tuple=True)[1]
-
-#   module.weight.data = module.weight.data[indexes]
-  
-# def permutate3d(module: nn.Module, permutation_matrix: torch.Tensor):
-#   weight_shape = module.weight.data.shape
-#   reshaped_weight = torch.reshape(module.weight.data, (weight_shape[0], -1))
-#   permutated_weight = torch.matmul(permutation_matrix, reshaped_weight)
-#   reformed_weight = torch.reshape(permutated_weight, weight_shape)
-
   
 def model_permutation(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], skip_connections: list[str] = []):
   '''
