@@ -1,8 +1,7 @@
 import sys
 sys.path.append('/home/gpilo/neuronswap')
 import torch
-import neuronswap.indexswap as iswap
-import neuronswap.modulexplore as modx
+import neuronswap as ns
 
 class FCnet(torch.nn.Module):
   def __init__(self):
@@ -23,7 +22,7 @@ eq_indexes = {"fc1": torch.tensor([4, 9], device='cpu'),
               "fc3": torch.tensor([1, 2], device='cpu')}
 
 graph = torch.fx.symbolic_trace(model).graph
-layers_list = modx.get_layers_list(graph, model)
+layers_list = ns.get_layers_list(graph, model)
 
 input = torch.rand(5)
 
@@ -36,7 +35,7 @@ for name, module in model.named_modules():
     print(module.bias.data)
     print(module.bias.data.shape)
 
-iswap.swap(layers_list, eq_indexes)
+ns.permutate(layers_list, eq_indexes)
 
 for name, module in model.named_modules():
   if isinstance(module, (torch.nn.Linear, torch.nn.Conv2d)):

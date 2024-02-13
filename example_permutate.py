@@ -1,8 +1,7 @@
 import sys
 sys.path.append('/path/to/folder/containing/library')
 import torch
-import neuronswap.modulexplore as modx
-import neuronswap.matrixswap as mswap
+import neuronswap as ns
 
 class FCnet(torch.nn.Module):
   def __init__(self):
@@ -50,13 +49,13 @@ permutation_matrix = {"fc1": torch.tensor([[0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
                                           dtype = torch.float32)} # this won't have any effect but it is here to verify it is ignored
 
 graph = torch.fx.symbolic_trace(model).graph
-layers_list = modx.get_layers_list(graph, model)
+layers_list = ns.get_layers_list(graph, model)
 
 input = torch.rand(5)
 
 output_before = model(input)
 
-mswap.swap(layers_list, permutation_matrix)
+ns.permutate(layers_list, permutation_matrix)
 
 output_after = model(input)
 
