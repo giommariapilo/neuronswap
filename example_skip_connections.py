@@ -2,7 +2,7 @@ import sys
 sys.path.append('/path/to/folder/containing/library')
 import torch
 from torchvision import models
-import neuronswap.nswap as ns
+import neuronswap.indexswap as iswap
 import neuronswap.modulexplore as modx
 
 model = models.resnet18()
@@ -26,7 +26,7 @@ model.train(False)
 
 output_before = model(input)
 
-ns.swap(layers_list, eq_indexes, skip_connections)
+iswap.swap(layers_list, eq_indexes, skip_connections)
 
 output_after = model(input)
 

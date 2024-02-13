@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-def permutate_layer(module: nn.Module, permutation_matrix: torch.Tensor):
+def swap_layer(module: nn.Module, permutation_matrix: torch.Tensor):
   '''
   This function takes as arguments a layer and the permutation matrix for that layer. 
   It then permutates the layer swapping the rows. It is implemented as a matrix multiplication.
@@ -21,7 +21,7 @@ def permutate_layer(module: nn.Module, permutation_matrix: torch.Tensor):
   except:
     pass
 
-def permutate_inputs(module: nn.Module, previous_module: nn.Module, permutation_matrix: torch.Tensor):
+def swap_input_channels(module: nn.Module, previous_module: nn.Module, permutation_matrix: torch.Tensor):
   '''
   This function swaps the input channels of a layer by means of a matrix multiplication
   in this case the second dimension is swapped, to represent the input channels.
@@ -60,7 +60,7 @@ def permutate_inputs(module: nn.Module, previous_module: nn.Module, permutation_
 
     
 
-def permutate_bn(module: nn.BatchNorm2d, permutation_matrix: torch.Tensor):
+def swap_bn_layer(module: nn.BatchNorm2d, permutation_matrix: torch.Tensor):
   '''
   This function swaps the parameters in a BN layer according to the permutation layer
   '''
@@ -69,7 +69,7 @@ def permutate_bn(module: nn.BatchNorm2d, permutation_matrix: torch.Tensor):
   module.running_mean.data = torch.matmul(module.running_mean.data, permutation_matrix)
   module.running_var.data = torch.matmul(module.running_var.data, permutation_matrix)
   
-def permutate(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], skip_connections: list[str] = []):
+def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], skip_connections: list[str] = []):
   '''
   This function receives the list of layers of a model and a dictionary containing the 
   permutation matrix associated to each layer. It then calls permutate sequentially on each 
@@ -83,14 +83,14 @@ def permutate(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor
     if i != len(layers_list) - 1 and name not in skip_connections and name in permutations.keys():
       mask = permutations[name]
       if isinstance(module, (nn.Linear, nn.Conv2d)):
-        permutate_layer(module, mask)
+        swap_layer(module, mask)
         _, next_module = layers_list[i + 1]
         last_swapped_layer = (name, module)
       elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
         name, module = last_swapped_layer # this is important ... if the current layer is not linerar or convolutional,                                       
       if isinstance(next_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
-        permutate_inputs(next_module, module, mask)
+        swap_input_channels(next_module, module, mask)
       elif isinstance(next_module, (nn.BatchNorm2d)):
-        permutate_bn(next_module, mask)
+        swap_bn_layer(next_module, mask)
         _, next_module = layers_list[i + 2]
-        permutate_inputs(next_module, module, mask)
+        swap_input_channels(next_module, module, mask)

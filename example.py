@@ -1,7 +1,7 @@
 import sys
 sys.path.append('/home/gpilo/neuronswap')
 import torch
-import neuronswap.nswap as ns
+import neuronswap.indexswap as iswap
 import neuronswap.modulexplore as modx
 
 class FCnet(torch.nn.Module):
@@ -36,7 +36,7 @@ for name, module in model.named_modules():
     print(module.bias.data)
     print(module.bias.data.shape)
 
-ns.swap(layers_list, eq_indexes)
+iswap.swap(layers_list, eq_indexes)
 
 for name, module in model.named_modules():
   if isinstance(module, (torch.nn.Linear, torch.nn.Conv2d)):

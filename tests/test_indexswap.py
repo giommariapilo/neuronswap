@@ -1,6 +1,6 @@
 import sys
 sys.path.append('..')
-import neuronswap.nswap as ns
+import neuronswap.indexswap as iswap
 import neuronswap.modulexplore as modx
 import torch
 import torch.fx as fx
@@ -69,7 +69,7 @@ def test_swap_FC_layer():
 
   linear_layer.bias.data = torch.Tensor([0.435, -0.543, 0.242, 0.673])
 
-  ns.swap_lin_conv_layers(linear_layer, [1, 2])
+  iswap.swap_layer(linear_layer, [1, 2])
   # compare with expected result
   expected_weights = torch.Tensor([[-0.98,  0.56,  0.34], 
                                    [-0.05,  0.01,  0.07], 
@@ -114,7 +114,7 @@ def test_swap_conv_layer():
 
   conv_layer.bias.data = torch.Tensor([-0.0591, 0.2348, 0.2842, 0.1032])
 
-  ns.swap_lin_conv_layers(conv_layer, [1, 2])
+  iswap.swap_layer(conv_layer, [1, 2])
   # compare with expected result
   expected_weights = torch.Tensor([[[[-0.1698,  0.2072],
                                      [-0.1241, -0.0714]],
@@ -265,8 +265,8 @@ def test_swap_input_ch():
                                   0.0746, -0.1218,  0.0764, -0.1010,  0.0984, -0.0977, -0.0398, -0.0161,
                                  -0.1042, -0.1140,  0.1210,  0.0813, -0.1096, -0.0840,  0.0410,  0.0692]])
 
-  ns.swap_input_channels(conv_layer, linear_layer, [1, 2])
-  ns.swap_input_channels(linear_layer2,conv_layer, [1, 2])
+  iswap.swap_input_channels(conv_layer, linear_layer, [1, 2])
+  iswap.swap_input_channels(linear_layer2,conv_layer, [1, 2])
 
   assert torch.equal(conv_layer.weight.data, expected_conv), f'Incorrect swap of input channel in convolution layer'
   assert torch.equal(linear_layer2.weight.data, expected_lin2), f'Incorrect swap of input channel in linear layer'
@@ -279,7 +279,7 @@ def test_swap_bn_layer():
   bn_layer.running_mean.data = torch.Tensor([0.8453, 0.5144, 0.8725, 0.2729, 0.4508])
   bn_layer.running_var.data = torch.Tensor([0.5508, 0.9586, 0.4615, 0.9354, 0.3631])
 
-  ns.swap_bn_modules(bn_layer, [1, 3])
+  iswap.swap_bn_layer(bn_layer, [1, 3])
 
   exp_weight = torch.Tensor([0.6493, 0.3699, 0.4137, 0.5521, 0.2557])
   exp_bias = torch.Tensor([0.2871, 0.6967, 0.0846, 0.9143, 0.9102])
@@ -304,7 +304,7 @@ def test_swap_fc():
 
   output_before = model(input)
 
-  ns.swap(layers_list, eq_indexes)
+  iswap.swap(layers_list, eq_indexes)
 
   output_after = model(input)
 
@@ -326,7 +326,7 @@ def test_swap_conv():
 
   output_before = model(input)
 
-  ns.swap(layers_list, eq_indexes)
+  iswap.swap(layers_list, eq_indexes)
 
   output_after = model(input)
 
@@ -349,7 +349,7 @@ def test_swap_bn():
 
   output_before = model(input)
 
-  ns.swap(layers_list, eq_indexes)
+  iswap.swap(layers_list, eq_indexes)
 
   output_after = model(input)
 
@@ -377,7 +377,7 @@ def test_swap_resnet():
 
   output_before = model(input)
 
-  ns.swap(layers_list, eq_indexes, skip_connections)
+  iswap.swap(layers_list, eq_indexes, skip_connections)
 
   output_after = model(input)
 

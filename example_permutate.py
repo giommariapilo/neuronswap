@@ -1,9 +1,8 @@
 import sys
 sys.path.append('/path/to/folder/containing/library')
 import torch
-import neuronswap.nswap as ns
 import neuronswap.modulexplore as modx
-import neuronswap.permutate as perm
+import neuronswap.matrixswap as mswap
 
 class FCnet(torch.nn.Module):
   def __init__(self):
@@ -57,7 +56,7 @@ input = torch.rand(5)
 
 output_before = model(input)
 
-perm.permutate(layers_list, permutation_matrix)
+mswap.swap(layers_list, permutation_matrix)
 
 output_after = model(input)
 

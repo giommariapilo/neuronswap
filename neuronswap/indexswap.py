@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from torch import nn
 
-def swap_lin_conv_layers(layer: nn.Module, equilibrium_neurons):
+def swap_layer(layer: nn.Module, equilibrium_neurons):
   weights = layer.weight.data
   eq_weights = weights[equilibrium_neurons,:] # slice containing just the eq neurons
   weights = torch.cat((eq_weights, torch.from_numpy(np.delete(weights.numpy(), equilibrium_neurons, axis=0))), dim=0)
@@ -34,7 +34,7 @@ def swap_input_channels(module: nn.Module, previous_module: nn.Module, equilibri
   weights = torch.cat((eq_weights, weights), dim=1)
   module.weight.data = weights
 
-def swap_bn_modules(module: nn.BatchNorm2d, equilibrium_neurons):
+def swap_bn_layer(module: nn.BatchNorm2d, equilibrium_neurons):
   weights = module.weight.data
   eq_weights = weights[equilibrium_neurons] # slice containing just the eq neurons
   weights = torch.cat((eq_weights, torch.from_numpy(np.delete(weights.numpy(), equilibrium_neurons, axis=0))))
@@ -70,7 +70,7 @@ def swap(module_list: list[nn.Module], equilibrium_mask: dict[str, torch.Tensor]
     if i != len(module_list) - 1 and name not in skip_connections and name in equilibrium_mask.keys():
       mask = equilibrium_mask[name].long() if type(equilibrium_mask[name]) == torch.Tensor else equilibrium_mask[name]
       if isinstance(module, (nn.Linear, nn.Conv2d)):
-        swap_lin_conv_layers(module, mask)
+        swap_layer(module, mask)
         _, next_module = module_list[i + 1]
         last_swapped_layer = (name, module)
       elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
@@ -78,7 +78,7 @@ def swap(module_list: list[nn.Module], equilibrium_mask: dict[str, torch.Tensor]
       if isinstance(next_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
         swap_input_channels(next_module, module, mask)
       elif isinstance(next_module, (nn.BatchNorm2d)):
-        swap_bn_modules(next_module, mask)
+        swap_bn_layer(next_module, mask)
         _, next_module = module_list[i + 2]
         swap_input_channels(next_module, module, mask)
 
