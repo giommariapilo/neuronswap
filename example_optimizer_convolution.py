@@ -4,22 +4,25 @@ from torchvision import transforms, datasets
 import torch.nn.functional as F
 import neuronswap as ns
 
-class Classifier(nn.Module):
-  def __init__(self):
-    super(Classifier, self).__init__()
-    self.conv1 = nn.Conv2d(1, 6, 5)
-    self.pool = nn.AdaptiveAvgPool2d(output_size=1)
-    self.fc3 = nn.Linear(6, 10)
-    self.bn = nn.BatchNorm2d(6)
+class GarmentClassifier(nn.Module):
+    def __init__(self):
+        super(GarmentClassifier, self).__init__()
+        self.conv1 = nn.Conv2d(1, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 4 * 4, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
 
-  def forward(self, x):
-
-    x = F.relu(self.bn(self.conv1(x)))
-    x = self.pool(x)
-    x = x.squeeze(-1).squeeze(-1)
-    x = self.fc3(x)
-    return x
-
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 4 * 4)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+  
 def train_one_epoch():
   running_loss = 0.
   last_loss = 0.
@@ -54,7 +57,7 @@ classes = ('T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
 training_loader = torch.utils.data.DataLoader(training_set, batch_size=4, shuffle=True)
 validation_loader = torch.utils.data.DataLoader(validation_set, batch_size=4, shuffle=False)
 
-model = Classifier()
+model = GarmentClassifier()
 
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 loss_fn = torch.nn.CrossEntropyLoss()
@@ -68,25 +71,23 @@ print(optimizer.state_dict())
 for item in optimizer.state_dict()['state'].values():
   print(item['momentum_buffer'])
 
-permutations = {"conv1": torch.tensor([[0, 0, 1, 0, 0, 0],
-                                       [0, 1, 0, 0, 0, 0],
-                                       [1, 0, 0, 0, 0, 0],
-                                       [0, 0, 0, 1, 0, 0],
-                                       [0, 0, 0, 0, 1, 0],
-                                       [0, 0, 0, 0, 0, 1]],
-                                      dtype = torch.float32),
-
-                "fc3": torch.tensor([[0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                                     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                                     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                                     [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                                     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                                     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                                     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                                     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]], #this shouldnt swap
-                                    dtype = torch.float32)}
+# i create the permutation matrix automatically, the same for each layer
+permutations = {}
+for name, layer in model.named_modules():
+  if isinstance(layer, (nn.Conv2d, nn.Linear)):
+    matrix = torch.zeros(layer.weight.data.shape[0], layer.weight.data.shape[0], dtype = torch.float32)
+    for i in range(layer.weight.data.shape[0]):
+      if 0 == i:
+        matrix[i, 2] = 1
+      elif 2 == i:
+        matrix[i, 0] = 1
+      else:
+        matrix[i, i] = 1
+    if matrix.shape == torch.tensor([2, 2]):
+      matrix = torch.tensor([[0, 1],
+                              [1, 0]],
+                            dtype = torch.float32)
+    permutations[name] = matrix
 
 layers_list = ns.get_layers_list(torch.fx.symbolic_trace(model).graph, model)
 ns.permutate_optimizer(layers_list, permutations, model, optimizer)

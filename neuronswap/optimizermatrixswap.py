@@ -1,6 +1,6 @@
 import torch
-from torch import nn
-from torch import optim
+from torch import nn, optim
+from .modulexplore import create_layer_indices_dict
 
 def optimizer_swap_layer(layer: nn.Module, permutation_matrix: torch.Tensor, index: int, optimizer: optim.Optimizer):
   ''''''
@@ -30,23 +30,24 @@ def optimizer_swap_input_channels(permutation_matrix: torch.Tensor, layer_index:
     group_dimension = weights.shape[1] // previous_weights.shape[0] # integer division
     if weights.shape[1] % previous_weights.shape[0] != 0:
       raise ValueError(f"Incompatible layers: number of neurons of the first layer does not match number of input channels on the second layer\n{weights.shape[1]}%{previous_weights.shape[0]}={weights.shape[1] % previous_weights.shape[0]}")
- 
+    # extending the permutation matrix to the dimension of the input layer
     matrix = torch.zeros(weights.shape[1], weights.shape[1])
-
+    # obtaining the indices of the 1 inside the permutation matrix
     indexes = (permutation_matrix==1).nonzero(as_tuple=True)[1]
-
+    # each of the elements of the permutation matrix is extended by the dimension of the group
     for j in range(len(indexes)):
       inde = indexes[j]
       for i in range(group_dimension):
         matrix[j * group_dimension + i, inde * group_dimension + i] = 1
 
+    
 
-  if len(optimizer.state_dict()['state'][layer_index]['momentum_buffer']) != len(permutation_matrix.shape):
+  if len(optimizer.state_dict()['state'][layer_index]['momentum_buffer']) != len(matrix.shape):
     weight_dim = weights.shape
     reshaped_weight = weights.reshape((weight_dim[0], weight_dim[1], -1))
     permutated_weights = torch.empty((reshaped_weight.shape))
     for i in range(reshaped_weight.shape[-1]):
-      permutated_weights[:,:,i] = torch.matmul(reshaped_weight[:,:,i], permutation_matrix)
+      permutated_weights[:,:,i] = torch.matmul(reshaped_weight[:,:,i], matrix)
 
     optimizer.state_dict()['state'][layer_index]['momentum_buffer'] = permutated_weights.reshape(weight_dim)
 
@@ -70,7 +71,7 @@ def optimizer_swap(layers_list: list[nn.Module], permutations: dict[str, torch.T
         name, module = last_swapped_layer # this is important ... if the current layer is not linerar or convolutional,                                       
       if isinstance(next_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
         index = layer_indices[next_name]
-        previous_index = layer_indices[module]
+        previous_index = layer_indices[name]
         optimizer_swap_input_channels(mask, index, previous_index, optimizer)
       elif isinstance(next_module, (nn.BatchNorm2d)):
         index = layer_indices[next_name]
@@ -80,19 +81,3 @@ def optimizer_swap(layers_list: list[nn.Module], permutations: dict[str, torch.T
         previous_index = layer_indices[name]
         optimizer_swap_input_channels(mask, index, previous_index, optimizer)
   
-
-def create_layer_indices_dict(model: nn.Module) -> dict[str, int]:
-  ''''''
-  layer_indices = {}
-  index = 0
-  for name, layer in model.named_children():
-    if isinstance(layer, (nn.Linear, nn.BatchNorm2d, nn.Conv2d)):
-      layer_indices[name] = index
-      index += 1
-      try:
-        layer.get_parameter('bias')
-      except:
-        continue 
-      else:
-        index += 1
-  return layer_indices

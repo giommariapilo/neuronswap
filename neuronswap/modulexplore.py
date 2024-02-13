@@ -39,3 +39,19 @@ def get_skipped_layers(graph: fx.Graph, layers: list[tuple]):
 
   skipped_layers = list(set(skipped_layers))
   return skipped_layers
+
+def create_layer_indices_dict(model: nn.Module) -> dict[str, int]:
+  ''''''
+  layer_indices = {}
+  index = 0
+  for name, layer in model.named_children():
+    if isinstance(layer, (nn.Linear, nn.BatchNorm2d, nn.Conv2d)):
+      layer_indices[name] = index
+      index += 1
+      try:
+        layer.get_parameter('bias')
+      except:
+        continue 
+      else:
+        index += 1
+  return layer_indices

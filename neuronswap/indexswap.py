@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from torch import nn
 
-def swap_layer(layer: nn.Module, permutation_indices: torch.Tensor):
+def swap_layer(layer: nn.Module, permutation_indices: torch.Tensor | list[int]):
   weights = layer.weight.data
   eq_weights = weights[permutation_indices,:] # slice containing just the eq neurons
   weights = torch.cat((eq_weights, torch.from_numpy(np.delete(weights.numpy(), permutation_indices, axis=0))), dim=0)
@@ -15,7 +15,7 @@ def swap_layer(layer: nn.Module, permutation_indices: torch.Tensor):
   bias = torch.cat((eq_bias, torch.from_numpy(np.delete(bias.numpy(), permutation_indices, axis=0))))
   layer.bias.data = bias
 
-def swap_input_channels(layer: nn.Module, previous_layer: nn.Module, permutation_indices: torch.Tensor): # now supporting interface between conv2d and linear
+def swap_input_channels(layer: nn.Module, previous_layer: nn.Module, permutation_indices: torch.Tensor | list[int]): # now supporting interface between conv2d and linear
   indexes = permutation_indices
   weights = layer.weight.data
   group_dimension = 1
@@ -34,7 +34,7 @@ def swap_input_channels(layer: nn.Module, previous_layer: nn.Module, permutation
   weights = torch.cat((eq_weights, weights), dim=1)
   layer.weight.data = weights
 
-def swap_bn_layer(layer: nn.BatchNorm2d, permutation_indices: torch.Tensor):
+def swap_bn_layer(layer: nn.BatchNorm2d, permutation_indices: torch.Tensor | list[int]):
   weights = layer.weight.data
   eq_weights = weights[permutation_indices] # slice containing just the eq neurons
   weights = torch.cat((eq_weights, torch.from_numpy(np.delete(weights.numpy(), permutation_indices, axis=0))))
@@ -55,7 +55,7 @@ def swap_bn_layer(layer: nn.BatchNorm2d, permutation_indices: torch.Tensor):
   var = torch.cat((eq_var, torch.from_numpy(np.delete(var.numpy(), permutation_indices, axis=0))))
   layer.running_var.data = var
 
-def swap(layers_list: list[nn.Module], ppermutations: dict[str, torch.Tensor | list[int]], skip_connections: list[str] = []):
+def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | list[int]], skip_connections: list[str] = []):
   '''This function takes as inputs the list of layers in the model, a dictionary containing for each layer  
   the indexes of the neurons to be moved to the top of the layer, and an optional list of layers involved in 
   a skip connection. It then modifies each layer putting the weights of each of the specified neurons at the top 
@@ -67,8 +67,8 @@ def swap(layers_list: list[nn.Module], ppermutations: dict[str, torch.Tensor | l
   last_swapped_layer = ''
   for i in range(0,len(layers_list)):
     name, module = layers_list[i]
-    if i != len(layers_list) - 1 and name not in skip_connections and name in ppermutations.keys():
-      mask = ppermutations[name].long() if type(ppermutations[name]) == torch.Tensor else ppermutations[name]
+    if i != len(layers_list) - 1 and name not in skip_connections and name in permutations.keys():
+      mask = permutations[name].long() if type(permutations[name]) == torch.Tensor else permutations[name]
       if isinstance(module, (nn.Linear, nn.Conv2d)):
         swap_layer(module, mask)
         _, next_module = layers_list[i + 1]
@@ -81,4 +81,3 @@ def swap(layers_list: list[nn.Module], ppermutations: dict[str, torch.Tensor | l
         swap_bn_layer(next_module, mask)
         _, next_module = layers_list[i + 2]
         swap_input_channels(next_module, module, mask)
-
