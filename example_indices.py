@@ -28,21 +28,7 @@ input = torch.rand(5)
 
 output_before = model(input)
 
-for name, module in model.named_modules():
-  if isinstance(module, (torch.nn.Linear, torch.nn.Conv2d)):
-    print(module.weight.data)
-    print(module.weight.data.shape)
-    print(module.bias.data)
-    print(module.bias.data.shape)
-
 ns.permutate(layers_list, eq_indexes)
-
-for name, module in model.named_modules():
-  if isinstance(module, (torch.nn.Linear, torch.nn.Conv2d)):
-    print(module.weight.data)
-    print(module.weight.data.shape)
-    print(module.bias.data)
-    print(module.bias.data.shape)
 
 output_after = model(input)
 

@@ -71,11 +71,12 @@ def swap_bn_layer(layer: nn.BatchNorm2d, permutation_matrix: torch.Tensor):
   
 def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], skip_connections: list[str] = []):
   '''
-  This function takes as inputs the list of layers of a model and a dictionary containing the 
-  permutation matrix associated to each layer. It then sequentially permutates each 
-  layer, also permutating the input channels. The last layer won't be permutated as it will 
-  change the output of the network. If it receives a list  of skip connections, those 
-  layers are not permutated as permutation of skip connection layers is not supported yet.
+  This function takes as inputs the list of layers of a model, a dictionary containing the 
+  permutation matrix associated to each layer, and an optional list of skip connections. 
+  It then sequentially permutates each layer, also permutating the input channels. The 
+  last layer won't be permutated as it will change the output of the network. If it 
+  receives a list of skip connections, those layers are not permutated as permutation 
+  of skip connection layers is not supported yet.
   '''
   last_swapped_layer = ''
   for i in range(0,len(layers_list)):
