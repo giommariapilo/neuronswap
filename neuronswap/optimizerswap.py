@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch import optim
 
-def optimizer_permutate_layer(layer: nn.Module, permutation_matrix: torch.Tensor, index: int, optimizer: optim.Optimizer):
+def optimizer_swap_layer(layer: nn.Module, permutation_matrix: torch.Tensor, index: int, optimizer: optim.Optimizer):
   ''''''
   weight_shape = optimizer.state_dict()['state'][index]['momentum_buffer'].shape
   if len(weight_shape) != len(permutation_matrix.shape):
@@ -18,8 +18,7 @@ def optimizer_permutate_layer(layer: nn.Module, permutation_matrix: torch.Tensor
   else:
     optimizer.state_dict()['state'][index+1]['momentum_buffer'] = torch.matmul(optimizer.state_dict()['state'][index+1]['momentum_buffer'], permutation_matrix)
 
-
-def optimizer_permutate_inputs(permutation_matrix: torch.Tensor, layer_index: int, previous_layer_index: int, optimizer: optim.Optimizer):
+def optimizer_swap_input_channels(permutation_matrix: torch.Tensor, layer_index: int, previous_layer_index: int, optimizer: optim.Optimizer):
   ''''''
   matrix = permutation_matrix
   weights = optimizer.state_dict()['state'][layer_index]['momentum_buffer']
@@ -27,13 +26,6 @@ def optimizer_permutate_inputs(permutation_matrix: torch.Tensor, layer_index: in
   group_dimension = 1
   # this is in order to take into account the conv into linear interface where oftentimes
   # you have outputs from conv connecting to multiple input channels in linear
-  # try:
-  #   previous_weights.shape[0] != weights.shape[1]
-  # except IndexError:
-  #   print(previous_layer_index)
-  #   print(previous_weights.shape)
-  #   print(layer_index)
-  #   print(weights.shape)
   if previous_weights.shape[0] != weights.shape[1]:
     group_dimension = weights.shape[1] // previous_weights.shape[0] # integer division
     if weights.shape[1] % previous_weights.shape[0] != 0:
@@ -61,7 +53,7 @@ def optimizer_permutate_inputs(permutation_matrix: torch.Tensor, layer_index: in
   else:
     optimizer.state_dict()['state'][layer_index]['momentum_buffer'] = torch.matmul(weights, matrix)
 
-def optimizer_permutate(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], model: nn.Module, optimizer: optim.Optimizer,skip_connections: list[str] = []):
+def optimizer_swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], model: nn.Module, optimizer: optim.Optimizer,skip_connections: list[str] = []):
   ''''''
   layer_indices = create_layer_indices_dict(model)
   last_swapped_layer = ''
@@ -71,7 +63,7 @@ def optimizer_permutate(layers_list: list[nn.Module], permutations: dict[str, to
       mask = permutations[name]
       if isinstance(module, (nn.Linear, nn.Conv2d)):
         index = layer_indices[name]
-        optimizer_permutate_layer(module, mask, index, optimizer)
+        optimizer_swap_layer(module, mask, index, optimizer)
         next_name, next_module = layers_list[i + 1]
         last_swapped_layer = (name, module)
       elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
@@ -79,14 +71,14 @@ def optimizer_permutate(layers_list: list[nn.Module], permutations: dict[str, to
       if isinstance(next_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
         index = layer_indices[next_name]
         previous_index = layer_indices[module]
-        optimizer_permutate_inputs(mask, index, previous_index, optimizer)
+        optimizer_swap_input_channels(mask, index, previous_index, optimizer)
       elif isinstance(next_module, (nn.BatchNorm2d)):
         index = layer_indices[next_name]
-        optimizer_permutate_layer(next_module, mask, index, optimizer)
+        optimizer_swap_layer(next_module, mask, index, optimizer)
         next_name, next_module = layers_list[i + 2]
         index = layer_indices[next_name]
         previous_index = layer_indices[name]
-        optimizer_permutate_inputs(mask, index, previous_index, optimizer)
+        optimizer_swap_input_channels(mask, index, previous_index, optimizer)
   
 
 def create_layer_indices_dict(model: nn.Module) -> dict[str, int]:
@@ -103,5 +95,4 @@ def create_layer_indices_dict(model: nn.Module) -> dict[str, int]:
         continue 
       else:
         index += 1
-  # print(layer_indices)
   return layer_indices
