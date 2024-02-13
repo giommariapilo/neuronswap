@@ -10,4 +10,4 @@ Simple library to swap neuron positions inside the layers of a model
 
 ### Completed ✓
 
-- [✓] Implement optimizer swap
+- [x] Implement optimizer swap
