@@ -1,6 +1,5 @@
 import sys
 sys.path.append('..')
-import neuronswap.nswap as ns
 import neuronswap.modulexplore as modx
 import torch.fx as fx
 import torch.nn as nn

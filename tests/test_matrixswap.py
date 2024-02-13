@@ -1,6 +1,6 @@
 import sys
 sys.path.append('..')
-import neuronswap.permutate as perm
+import neuronswap.matrixswap as mswap
 import neuronswap.modulexplore as modx
 import torch
 import torch.nn as nn
@@ -95,7 +95,7 @@ def test_permutation_fc_layer():
                                    [-0.4306, -0.1518, -0.3142, -0.1896,  0.0766],
                                    [ 0.0536, -0.2405, -0.3818, -0.1850, -0.0953]])
 
-  perm.permutate(module, permutation_matrix)
+  mswap.swap_layer(module, permutation_matrix)
 
   assert torch.equal(expected_weights, module.weight.data), 'Permutation was not performed correctly'
 
@@ -148,7 +148,7 @@ def test_permutation_conv_layer():
                                     [[-0.0857,  0.1002],
                                      [-0.1481,  0.2322]]]])
 
-  perm.permutate(module, permutation_matrix)
+  mswap.swap_layer(module, permutation_matrix)
 
   assert torch.equal(expected_weights, module.weight.data), 'Permutation was not performed correctly'
 
@@ -184,7 +184,7 @@ def test_permutate_inputs_fc():
                                    [-0.3142, -0.1518, -0.4306, -0.1896,  0.0766],
                                    [-0.3818, -0.2405,  0.0536, -0.1850, -0.0953]])
 
-  perm.permutate_inputs(module, prev_module, permutation_matrix)
+  mswap.swap_input_channels(module, prev_module, permutation_matrix)
 
   assert torch.equal(expected_weights, module.weight.data), 'Permutation was not performed correctly'
 
@@ -239,7 +239,7 @@ def test_permutate_inputs_conv():
                                     [[-0.1709, -0.2350],
                                      [ 0.2849, -0.0315]]]])
 
-  perm.permutate_inputs(module, prev_module, permutation_matrix)
+  mswap.swap_input_channels(module, prev_module, permutation_matrix)
 
   assert torch.equal(expected_weights, module.weight.data), 'Permutation was not performed correctly'
 
@@ -259,7 +259,7 @@ def test_permutate_bn_layer():
   module.running_mean.data = torch.tensor([1, 2, 3, 4, 5], dtype=torch.float32)
 
   expected = torch.tensor([3, 2, 1, 4, 5], dtype=torch.float32)
-  perm.permutate_bn(module, permutation_matrix)
+  mswap.swap_bn_layer(module, permutation_matrix)
 
   assert torch.equal(module.weight.data, expected)
   assert torch.equal(module.bias.data, expected)
@@ -288,7 +288,7 @@ def test_permutate_inputs_conv_fc():
                                    [ 0.1544, -0.0328, -0.0416, -0.0471,  0.1377, -0.1832, -0.0208, -0.0665,
                                      0.2785, -0.1574,  0.2641, -0.1644]])
 
-  perm.permutate_inputs(lin, conv, permutation_matrix)
+  mswap.swap_input_channels(lin, conv, permutation_matrix)
 
   assert torch.equal(lin.weight.data, expected_weights)
 
@@ -332,7 +332,7 @@ def test_permutate_fc_net():
 
   output_before = model(input)
 
-  perm.model_permutation(layers_list, permutation_matrix)
+  mswap.swap(layers_list, permutation_matrix)
 
   output_after = model(input)
 
@@ -368,7 +368,7 @@ def test_permutate_conv_net():
 
   output_before = model(input)
 
-  perm.model_permutation(layers_list, permutation_matrix)
+  mswap.swap(layers_list, permutation_matrix)
 
   output_after = model(input)
 
@@ -412,7 +412,7 @@ def test_permutate_convBN_net():
 
   output_before = model(input)
 
-  perm.model_permutation(layers_list, permutation_matrix)
+  mswap.swap(layers_list, permutation_matrix)
 
   output_after = model(input)
 
@@ -447,7 +447,7 @@ def test_permutate_resnet18():
 
   output_before = model(input)
 
-  perm.model_permutation(layers_list, permutation_matrix, skip_connections)
+  mswap.swap(layers_list, permutation_matrix, skip_connections)
 
   output_after = model(input)
 
