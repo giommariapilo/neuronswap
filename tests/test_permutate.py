@@ -95,7 +95,7 @@ def test_permutation_fc_layer():
                                    [-0.4306, -0.1518, -0.3142, -0.1896,  0.0766],
                                    [ 0.0536, -0.2405, -0.3818, -0.1850, -0.0953]])
 
-  perm.permutate(module, permutation_matrix)
+  perm.permutate_layer(module, permutation_matrix)
 
   assert torch.equal(expected_weights, module.weight.data), 'Permutation was not performed correctly'
 
@@ -148,7 +148,7 @@ def test_permutation_conv_layer():
                                     [[-0.0857,  0.1002],
                                      [-0.1481,  0.2322]]]])
 
-  perm.permutate(module, permutation_matrix)
+  perm.permutate_layer(module, permutation_matrix)
 
   assert torch.equal(expected_weights, module.weight.data), 'Permutation was not performed correctly'
 
@@ -332,7 +332,7 @@ def test_permutate_fc_net():
 
   output_before = model(input)
 
-  perm.model_permutation(layers_list, permutation_matrix)
+  perm.permutate(layers_list, permutation_matrix)
 
   output_after = model(input)
 
@@ -368,7 +368,7 @@ def test_permutate_conv_net():
 
   output_before = model(input)
 
-  perm.model_permutation(layers_list, permutation_matrix)
+  perm.permutate(layers_list, permutation_matrix)
 
   output_after = model(input)
 
@@ -412,7 +412,7 @@ def test_permutate_convBN_net():
 
   output_before = model(input)
 
-  perm.model_permutation(layers_list, permutation_matrix)
+  perm.permutate(layers_list, permutation_matrix)
 
   output_after = model(input)
 
@@ -447,7 +447,7 @@ def test_permutate_resnet18():
 
   output_before = model(input)
 
-  perm.model_permutation(layers_list, permutation_matrix, skip_connections)
+  perm.permutate(layers_list, permutation_matrix, skip_connections)
 
   output_after = model(input)
 

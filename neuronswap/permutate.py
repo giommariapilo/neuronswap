@@ -1,8 +1,7 @@
 import torch
-import numpy as np
 from torch import nn
 
-def permutate(module: nn.Module, permutation_matrix: torch.Tensor):
+def permutate_layer(module: nn.Module, permutation_matrix: torch.Tensor):
   '''
   This function takes as arguments a layer and the permutation matrix for that layer. 
   It then permutates the layer swapping the rows. It is implemented as a matrix multiplication.
@@ -70,7 +69,7 @@ def permutate_bn(module: nn.BatchNorm2d, permutation_matrix: torch.Tensor):
   module.running_mean.data = torch.matmul(module.running_mean.data, permutation_matrix)
   module.running_var.data = torch.matmul(module.running_var.data, permutation_matrix)
   
-def model_permutation(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], skip_connections: list[str] = []):
+def permutate(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], skip_connections: list[str] = []):
   '''
   This function receives the list of layers of a model and a dictionary containing the 
   permutation matrix associated to each layer. It then calls permutate sequentially on each 
@@ -84,7 +83,7 @@ def model_permutation(layers_list: list[nn.Module], permutations: dict[str, torc
     if i != len(layers_list) - 1 and name not in skip_connections and name in permutations.keys():
       mask = permutations[name]
       if isinstance(module, (nn.Linear, nn.Conv2d)):
-        permutate(module, mask)
+        permutate_layer(module, mask)
         _, next_module = layers_list[i + 1]
         last_swapped_layer = (name, module)
       elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
