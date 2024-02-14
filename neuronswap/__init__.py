@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 
 from .modulexplore import get_layers_list, get_skipped_layers
-from .optimizermatrixswap import optimizer_swap as moswap
-from .optimizerindexswap import optimizer_swap as ioswap
+from .optimizermatrixswap import swap as moswap
+from .optimizerindexswap import swap as ioswap
 from .matrixswap import swap as mswap
 from .indexswap import swap as iswap
 
@@ -17,7 +17,6 @@ def permutate(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor
   type_check = None
   shape_check = 0
   for permutation in permutations.values():
-    print(type(permutation))
     if type_check != None:
       if type(permutation) != type_check:
         raise TypeError(f'ERROR: values inside "permutations" must be of the same type, expected{type_check}, got instead {type(permutation)}!')

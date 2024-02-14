@@ -49,14 +49,14 @@ def swap_bn_layer(permutation_indices: torch.Tensor | list[int], index: int, opt
   bias = torch.cat((eq_bias, torch.from_numpy(np.delete(bias.numpy(), permutation_indices, axis=0))))
   optimizer.state_dict()['state'][index + 1]['momentum_buffer'] = bias
 
-def optimizer_swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | list[int]], model: nn.Module, optimizer: optim.Optimizer,skip_connections: list[str] = []):
+def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | list[int]], model: nn.Module, optimizer: optim.Optimizer,skip_connections: list[str] = []):
   ''''''
   layer_indices = create_layer_indices_dict(model)
   last_swapped_layer = ''
   for i in range(0,len(layers_list)):
     name, module = layers_list[i]
     if i != len(layers_list) - 1 and name not in skip_connections and name in permutations.keys():
-      mask = permutations[name]
+      mask = permutations[name].long() if type(permutations[name]) == torch.Tensor else permutations[name]
       if isinstance(module, (nn.Linear, nn.Conv2d)):
         index = layer_indices[name]
         swap_layer(module, mask, index, optimizer)
