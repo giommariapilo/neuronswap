@@ -17,7 +17,6 @@ def permutate(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor
   type_check = None
   shape_check = 0
   for permutation in permutations.values():
-    print(type(permutation))
     if type_check != None:
       if type(permutation) != type_check:
         raise TypeError(f'ERROR: values inside "permutations" must be of the same type, expected{type_check}, got instead {type(permutation)}!')
