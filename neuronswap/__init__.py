@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 
 from .modulexplore import get_layers_list, get_skipped_layers
-from .optimizermatrixswap import optimizer_swap as moswap
-from .optimizerindexswap import optimizer_swap as ioswap
+from .optimizermatrixswap import swap as moswap
+from .optimizerindexswap import swap as ioswap
 from .matrixswap import swap as mswap
 from .indexswap import swap as iswap
 
