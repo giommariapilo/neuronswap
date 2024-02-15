@@ -26,9 +26,8 @@ class Classifier(nn.Module):
     x = self.fc3(x)
     return x
   
-def train_one_epoch(model, optimizer, training_loader, loss_fn):
+def train_one_batch(model, optimizer, training_loader, loss_fn):
   running_loss = 0.
-  last_loss = 0.
   for i, data in enumerate(training_loader):
     inputs, labels = data
 
@@ -42,11 +41,8 @@ def train_one_epoch(model, optimizer, training_loader, loss_fn):
     optimizer.step()
 
     running_loss += loss.item()
-    if i % 1000 == 999:
-      last_loss = running_loss / 1000 
-      break
-
-  return last_loss
+    break
+  return 
 
 def test_swap_layer():
   model = Classifier( )
@@ -62,7 +58,7 @@ def test_swap_layer():
   loss_fn = torch.nn.CrossEntropyLoss()
 
   model.train(True)
-  _ = train_one_epoch(model, optimizer, training_loader, loss_fn)
+  _ = train_one_batch(model, optimizer, training_loader, loss_fn)
 
   model.eval()
 
@@ -214,7 +210,7 @@ def test_swap_input_channels():
   loss_fn = torch.nn.CrossEntropyLoss()
 
   model.train(True)
-  _ = train_one_epoch(model, optimizer, training_loader, loss_fn)
+  _ = train_one_batch(model, optimizer, training_loader, loss_fn)
 
   model.eval()
 
@@ -368,7 +364,7 @@ def test_swap_bn_layer():
   loss_fn = torch.nn.CrossEntropyLoss()
 
   model.train(True)
-  _ = train_one_epoch(model, optimizer, training_loader, loss_fn)
+  _ = train_one_batch(model, optimizer, training_loader, loss_fn)
 
   model.eval()
 
@@ -522,7 +518,7 @@ def test_optimizer_swap():
   loss_fn = torch.nn.CrossEntropyLoss()
 
   model.train(True)
-  _ = train_one_epoch(model, optimizer, training_loader, loss_fn)
+  _ = train_one_batch(model, optimizer, training_loader, loss_fn)
 
   model.eval()
 
