@@ -86,7 +86,7 @@ def test_fully_connected_random_swap():
 
     random_mask, permutations = generate_random_mask_with_permutation(linears, names)
 
-    ns.permutate(layers_list, random_mask, skip_connections)
+    ns.permute(layers_list, random_mask, skip_connections)
 
     with torch.no_grad():
         _ = model(sample_input)

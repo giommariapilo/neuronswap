@@ -86,6 +86,6 @@ permutations = {"conv1": torch.tensor([[0, 0, 1, 0, 0, 0],
                                     dtype = torch.float32)}
 
 layers_list = ns.get_layers_list(torch.fx.symbolic_trace(model).graph, model)
-ns.permutate_optimizer(layers_list, permutations, model, optimizer)
+ns.permute_optimizer(layers_list, permutations, model, optimizer)
 for item in optimizer.state_dict()['state'].values():
   print(item['momentum_buffer'])

@@ -7,8 +7,8 @@ def swap_layer(layer: nn.Module, permutation_matrix: torch.Tensor, index: int, o
   weight_shape = optimizer.state_dict()['state'][index]['momentum_buffer'].shape
   if len(weight_shape) != len(permutation_matrix.shape):
     reshaped_weight = torch.reshape(optimizer.state_dict()['state'][index]['momentum_buffer'], (weight_shape[0], -1))
-    permutated_weight = torch.matmul(permutation_matrix, reshaped_weight)
-    optimizer.state_dict()['state'][index]['momentum_buffer'] = torch.reshape(permutated_weight, weight_shape)
+    permuted_weight = torch.matmul(permutation_matrix, reshaped_weight)
+    optimizer.state_dict()['state'][index]['momentum_buffer'] = torch.reshape(permuted_weight, weight_shape)
   else: 
     optimizer.state_dict()['state'][index]['momentum_buffer'] = torch.matmul(permutation_matrix, optimizer.state_dict()['state'][index]['momentum_buffer'])
   try:
@@ -46,11 +46,11 @@ def swap_input_channels(permutation_matrix: torch.Tensor, layer_index: int, prev
   if len(optimizer.state_dict()['state'][layer_index]['momentum_buffer']) != len(matrix.shape):
     weight_dim = weights.shape
     reshaped_weight = weights.reshape((weight_dim[0], weight_dim[1], -1))
-    permutated_weights = torch.empty((reshaped_weight.shape))
+    permuted_weights = torch.empty((reshaped_weight.shape))
     for i in range(reshaped_weight.shape[-1]):
-      permutated_weights[:,:,i] = torch.matmul(reshaped_weight[:,:,i], matrix)
+      permuted_weights[:,:,i] = torch.matmul(reshaped_weight[:,:,i], matrix)
 
-    optimizer.state_dict()['state'][layer_index]['momentum_buffer'] = permutated_weights.reshape(weight_dim)
+    optimizer.state_dict()['state'][layer_index]['momentum_buffer'] = permuted_weights.reshape(weight_dim)
 
   else:
     optimizer.state_dict()['state'][layer_index]['momentum_buffer'] = torch.matmul(weights, matrix)

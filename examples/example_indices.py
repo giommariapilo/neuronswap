@@ -28,7 +28,7 @@ input = torch.rand(5)
 
 output_before = model(input)
 
-ns.permutate(layers_list, eq_indexes)
+ns.permute(layers_list, eq_indexes)
 
 output_after = model(input)
 

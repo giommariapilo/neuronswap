@@ -25,7 +25,7 @@ model.train(False)
 
 output_before = model(input)
 
-ns.permutate(layers_list, eq_indexes, skip_connections)
+ns.permute(layers_list, eq_indexes, skip_connections)
 
 output_after = model(input)
 

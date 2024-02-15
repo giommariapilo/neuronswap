@@ -55,7 +55,7 @@ input = torch.rand(5)
 
 output_before = model(input)
 
-ns.permutate(layers_list, permutation_matrix)
+ns.permute(layers_list, permutation_matrix)
 
 output_after = model(input)
 

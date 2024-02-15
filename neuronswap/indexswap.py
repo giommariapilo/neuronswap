@@ -65,7 +65,7 @@ def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | li
   '''This function takes as inputs the list of layers in the model, a dictionary containing for each layer  
   the indexes of the neurons to be moved to the top of the layer, and an optional list of layers involved in 
   a skip connection. It then modifies each layer putting the weights of each of the specified neurons at the top 
-  of the weight matrix. The last layer won't be permutated as it will change the output of the network.
+  of the weight matrix. The last layer won't be permuted as it will change the output of the network.
   It then swaps the input channels of the next layer accordingly and performs the same 
   transformation for the biases and the parameters of any batch normalization layer related. If a list of the 
   skip connections is passed, the transformation is inhibited for those layers as it is not yet supported.'''
