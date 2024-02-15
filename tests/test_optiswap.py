@@ -1,13 +1,11 @@
 import sys
 sys.path.append('..')
-import pytest
 import neuronswap.optimizermatrixswap as omswap
 import neuronswap.optimizerindexswap as oiswap
 import neuronswap as ns
 import torch
 from torch import fx, nn, optim
 import torch.nn.functional as F
-from torchvision.models import resnet18
 from torchvision import transforms, datasets
 
 class Classifier(nn.Module):
