@@ -1,6 +1,6 @@
 # Neuronswap
 
-This library is used to permutate neurons inside layers of a model. It is intended to be uses in the NEq algorithm to move neurons at equilibrium to the top of the layer so that they can be excluded from gradient computations, but has also a more general method that accepts a permutation matrix to transform the layers in a model, maintaning the same output.
+This library is used to permute neurons inside layers of a model. It is intended to be uses in the NEq algorithm to move neurons at equilibrium to the top of the layer so that they can be excluded from gradient computations, but has also a more general method that accepts a permutation matrix to transform the layers in a model, maintaning the same output. It has also the ability to permute the momentum buffers of the optimizer when it is necessary to swap neurons during training.
 
 ## Installation
 
@@ -19,13 +19,13 @@ import neuronswap.modulexplore as modx
 
 ### Main function
 There are three main parts to the library.
-- The first one, `get_layers_list()`, obtains an list of the layers ordered hierarchically from a graph of the model generated using `torch.fx.symbolic_trace(your_model).graph`. An optional list of skip connections can be obtained using `get_skip_connections()`
-- The second one is `permutate()` which is the main function of the library. It takes as inputs the list of layer, and optionally the list of skip connections obtained previously, together with a dictionary containing for each layer name, the permutation that needs to be performed on the layer. This is in the form of a permutation matrix or a list of the indices of the neurons to be moved to the top of the matrix. Depending on which is passed, a different method is used to perform the transformation. The input channels of the following layer are swapped accordingly. In case a list of skip connections is passed, these layers are ignored as the permutation in these case is not supported yet. The function does not return any value as it changes the layers in the model directly.
-- In case this method is used during training and an optimizer with momentum is used it is necessary to swap the parameters saved inside the state dictionary of the optimizer as well. This can be done using `permutate_optimizer()`. It takes as inputs the optimizer, the list of layer, and optionally the list of skip connections obtained previously, together with a dictionary containing for each layer name, the permutation that needs to be performed on the layer. Depending on which is passed, a different method is used to perform the transformation. The parameters corresponding to the input channels of the following layer are also swapped accordingly. In case a list of skip connections is passed, these layers are ignored as the permutation in these case is not supported yet. The function does not return any value as it changes the state dictionary in the optimizer directly.
+- The first one, `get_layers_list()`, obtains an list of the layers ordered hierarchically from a graph of the model generated using `torch.fx.symbolic_trace(your_model).graph`. An optional list of skip connections can be obtained using `get_skip_connections()`.
+- The second one is `permute()` which is the main function of the library. It takes as inputs the list of layer, and optionally the list of skip connections obtained previously, together with a dictionary containing for each layer name, the permutation that needs to be performed on the layer. This is in the form of a permutation matrix or a list of the indices of the neurons to be moved to the top of the matrix. Depending on which is passed, a different method is used to perform the transformation. The input channels of the following layer are swapped accordingly. In case a list of skip connections is passed, these layers are ignored as the permutation in these case is not supported yet. The function does not return any value as it changes the layers in the model directly.
+- In case this method is used during training and an optimizer with momentum is used, it is necessary to swap the parameters saved inside the state dictionary of the optimizer as well. This can be done using `permute_optimizer()`. It takes as inputs the optimizer, the list of layer, and optionally the list of skip connections obtained previously, together with a dictionary containing for each layer name, the permutation that needs to be performed on the layer. Depending on which is passed, a different method is used to perform the transformation. The parameters corresponding to the input channels of the following layer are also swapped accordingly. In case a list of skip connections is passed, these layers are ignored as the permutation in these case is not supported yet. The function does not return any value as it changes the state dictionary in the optimizer directly.
 
 #### Arguments
 
-The expected arguments for `permutate` are:
+The expected arguments for `permute` are:
 
 - `layers_list (list[torch.nn.Module])`: List of the layers in hierarchical order of the model to which the swap is applyed. Obtained using `get_layers_list()`.
 - `permutations (dict[str, torch.Tensor | list[int]])`: Dictionary where the keys are the layer names and the values are iterables containing the indexes of the neurons to be moved to the top of the layer or permutation matrices. It is important to chose just one of the two and not to mix them together.
@@ -66,7 +66,7 @@ input = torch.rand(5)
 
 output_before = model(input)
 
-ns.permutate(layers_list, eq_indexes)
+ns.permute(layers_list, eq_indexes)
 
 output_after = model(input)
 
@@ -104,7 +104,7 @@ model.train(False)
 
 output_before = model(input)
 
-ns.permutate(layers_list, eq_indexes, skip_connections)
+ns.permute(layers_list, eq_indexes, skip_connections)
 
 output_after = model(input)
 
@@ -174,7 +174,7 @@ input = torch.rand(5)
 
 output_before = model(input)
 
-ns.permutate(layers_list, permutation_matrix)
+ns.permute(layers_list, permutation_matrix)
 
 output_after = model(input)
 
