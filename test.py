@@ -9,6 +9,8 @@ import torch.nn.functional as F
 from torchvision.models import resnet18
 from torchvision import transforms, datasets
 
+torch.set_default_device('cuda')
+
 class Classifier(nn.Module):
   def __init__(self):
     super(Classifier, self).__init__()
@@ -25,12 +27,12 @@ class Classifier(nn.Module):
     x = self.fc3(x)
     return x
 
-def train_one_epoch(model, optimizer, training_loader, loss_fn):
+def train_one_batch(model, optimizer, training_loader, loss_fn):
   running_loss = 0.
-  last_loss = 0.
+
   for i, data in enumerate(training_loader):
     inputs, labels = data
-
+    inputs, labels = inputs.cuda(), labels.cuda()
     optimizer.zero_grad()
 
     outputs = model(inputs)
@@ -41,13 +43,14 @@ def train_one_epoch(model, optimizer, training_loader, loss_fn):
     optimizer.step()
 
     running_loss += loss.item()
-    if i % 1000 == 999:
-      last_loss = running_loss / 1000 
-      break
+    
+    break
 
-  return last_loss
+  return 
+
 
 model = Classifier( )
+model.to('cuda')
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 transform = transforms.Compose([transforms.ToTensor(),
                               transforms.Normalize((0.5,), (0.5,))])
@@ -55,12 +58,12 @@ transform = transforms.Compose([transforms.ToTensor(),
 training_set = datasets.FashionMNIST('./data', train=True, transform=transform, download=True)
 
 
-training_loader = torch.utils.data.DataLoader(training_set, batch_size=4, shuffle=True)
+training_loader = torch.utils.data.DataLoader(training_set, batch_size=4, shuffle=True, generator=torch.Generator(device = 'cuda'))
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
 model.train(True)
-_ = train_one_epoch(model, optimizer, training_loader, loss_fn)
+train_one_batch(model, optimizer, training_loader, loss_fn)
 
 model.eval()
 
@@ -71,7 +74,7 @@ permutation_matrices = {"conv1": torch.Tensor([[0, 1, 0, 0, 0, 0],
                                                [1, 0, 0, 0, 0, 0],
                                                [0, 0, 0, 1, 0, 0],
                                                [0, 0, 0, 0, 1, 0],
-                                               [0, 0, 0, 0, 0, 1]]),
+                                               [0, 0, 0, 0, 0, 1]]).cuda(),
 
               "fc3": torch.Tensor([[0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
                                     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -82,11 +85,11 @@ permutation_matrices = {"conv1": torch.Tensor([[0, 1, 0, 0, 0, 0],
                                     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
                                     [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
                                     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])} #this shouldnt swap
+                                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]).cuda()} #this shouldnt swap
                                   
 
-permutation_indices = {'conv1': torch.Tensor([2]),
-                       'fc3': torch.Tensor([2])}
+permutation_indices = {'conv1': torch.Tensor([2]).cpu(),
+                       'fc3': torch.Tensor([2]).cpu()}
 
 weights = [torch.Tensor([[[[-0.0161, -0.0293,  0.0048,  0.0346,  0.0655],
                            [-0.0117, -0.0193,  0.0188,  0.0464,  0.0757],
@@ -122,8 +125,8 @@ weights = [torch.Tensor([[[[-0.0161, -0.0293,  0.0048,  0.0346,  0.0655],
                            [ 0.0119, -0.0090,  0.0049,  0.0521,  0.0845],
                            [ 0.0045, -0.0228, -0.0106,  0.0395,  0.0701],
                            [-0.0115, -0.0364, -0.0271,  0.0222,  0.0508],
-                           [-0.0228, -0.0444, -0.0372,  0.0065,  0.0337]]]]),
-            torch.Tensor([-1.0001e-06,  1.4361e-07,  2.1791e-07,  7.8905e-08,  3.2799e-08, -2.9274e-07]),
+                           [-0.0228, -0.0444, -0.0372,  0.0065,  0.0337]]]]).cuda(),
+            torch.Tensor([-1.0001e-06,  1.4361e-07,  2.1791e-07,  7.8905e-08,  3.2799e-08, -2.9274e-07]).cuda(),
             torch.Tensor([[-0.2084, -0.0139, -0.2453,  0.0028, -0.0492, -0.1662],
                           [ 0.0666,  0.1337,  0.0296,  0.1523,  0.1280,  0.0652],
                           [ 0.3016, -0.1294,  0.3100, -0.1256, -0.1499,  0.2443],
@@ -133,10 +136,10 @@ weights = [torch.Tensor([[[[-0.0161, -0.0293,  0.0048,  0.0346,  0.0655],
                           [ 0.2776,  0.0516,  0.2964,  0.0557,  0.0542,  0.2379],
                           [-0.1901,  0.1522, -0.1563,  0.1251,  0.1941, -0.1525],
                           [ 0.2329, -0.0790,  0.3072, -0.0956, -0.0434,  0.2006],
-                          [-0.1605,  0.0662, -0.1511,  0.0529,  0.0967, -0.1404]]),
-            torch.Tensor([-0.4251,  0.2420,  0.1216, -0.5012,  0.1791,  0.0572,  0.2810, -0.0100,  0.1548, -0.0994]),
-            torch.Tensor([-0.1273, -0.1601, -0.3394, -0.0871, -0.1493, -0.0837]),
-            torch.Tensor([-0.0976, -0.1095, -0.2483, -0.1089, -0.1593, -0.0851])]
+                          [-0.1605,  0.0662, -0.1511,  0.0529,  0.0967, -0.1404]]).cuda(),
+            torch.Tensor([-0.4251,  0.2420,  0.1216, -0.5012,  0.1791,  0.0572,  0.2810, -0.0100,  0.1548, -0.0994]).cuda(),
+            torch.Tensor([-0.1273, -0.1601, -0.3394, -0.0871, -0.1493, -0.0837]).cuda(),
+            torch.Tensor([-0.0976, -0.1095, -0.2483, -0.1089, -0.1593, -0.0851]).cuda()]
 expected_weights = [torch.Tensor([[[[ 0.0076, -0.0133, -0.0318, -0.0556, -0.0619],
                                     [ 0.0021, -0.0206, -0.0316, -0.0460, -0.0460],
                                     [-0.0296, -0.0505, -0.0533, -0.0629, -0.0595],
@@ -171,8 +174,8 @@ expected_weights = [torch.Tensor([[[[ 0.0076, -0.0133, -0.0318, -0.0556, -0.0619
                                     [ 0.0119, -0.0090,  0.0049,  0.0521,  0.0845],
                                     [ 0.0045, -0.0228, -0.0106,  0.0395,  0.0701],
                                     [-0.0115, -0.0364, -0.0271,  0.0222,  0.0508],
-                                    [-0.0228, -0.0444, -0.0372,  0.0065,  0.0337]]]]),
-                    torch.Tensor([ 1.4361e-07,  2.1791e-07, -1.0001e-06,  7.8905e-08,  3.2799e-08, -2.9274e-07]),
+                                    [-0.0228, -0.0444, -0.0372,  0.0065,  0.0337]]]]).cuda(),
+                    torch.Tensor([ 1.4361e-07,  2.1791e-07, -1.0001e-06,  7.8905e-08,  3.2799e-08, -2.9274e-07]).cuda(),
                     torch.Tensor([[-0.0139, -0.2453, -0.2084,  0.0028, -0.0492, -0.1662],
                                   [ 0.1337,  0.0296,  0.0666,  0.1523,  0.1280,  0.0652],
                                   [-0.1294,  0.3100,  0.3016, -0.1256, -0.1499,  0.2443],
@@ -182,10 +185,10 @@ expected_weights = [torch.Tensor([[[[ 0.0076, -0.0133, -0.0318, -0.0556, -0.0619
                                   [ 0.0516,  0.2964,  0.2776,  0.0557,  0.0542,  0.2379],
                                   [ 0.1522, -0.1563, -0.1901,  0.1251,  0.1941, -0.1525],
                                   [-0.0790,  0.3072,  0.2329, -0.0956, -0.0434,  0.2006],
-                                  [ 0.0662, -0.1511, -0.1605,  0.0529,  0.0967, -0.1404]]),
-                    torch.Tensor([-0.4251,  0.2420,  0.1216, -0.5012,  0.1791,  0.0572,  0.2810, -0.0100,  0.1548, -0.0994]),
-                    torch.Tensor([-0.1601, -0.3394, -0.1273, -0.0871, -0.1493, -0.0837]),
-                    torch.Tensor([-0.1095, -0.2483, -0.0976, -0.1089, -0.1593, -0.0851])]
+                                  [ 0.0662, -0.1511, -0.1605,  0.0529,  0.0967, -0.1404]]).cuda(),
+                    torch.Tensor([-0.4251,  0.2420,  0.1216, -0.5012,  0.1791,  0.0572,  0.2810, -0.0100,  0.1548, -0.0994]).cuda(),
+                    torch.Tensor([-0.1601, -0.3394, -0.1273, -0.0871, -0.1493, -0.0837]).cuda(),
+                    torch.Tensor([-0.1095, -0.2483, -0.0976, -0.1089, -0.1593, -0.0851]).cuda()]
 for index in range(len(weights)):
   optimizer.state_dict()['state'][index]['momentum_buffer'] = weights[index]
 

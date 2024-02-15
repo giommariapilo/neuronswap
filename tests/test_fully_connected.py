@@ -5,8 +5,7 @@ import os
 import random as rd
 import torch
 
-import neuronswap.nswap as ns
-import neuronswap.modulexplore as modx
+import neuronswap as ns
 
 
 def set_seed(seed):
@@ -68,8 +67,8 @@ def test_fully_connected_random_swap():
     set_seed(3)
     model = FCnet()
     graph = torch.fx.symbolic_trace(model).graph
-    layers_list = modx.get_layers_list(graph, model)
-    skip_connections = modx.get_skipped_layers(graph, layers_list)
+    layers_list = ns.get_layers_list(graph, model)
+    skip_connections = ns.get_skipped_layers(graph, layers_list)
     linears, names = get_all_linear_ops_with_names(model)
 
     model.apply(add_input_output_hook)
@@ -87,7 +86,7 @@ def test_fully_connected_random_swap():
 
     random_mask, permutations = generate_random_mask_with_permutation(linears, names)
 
-    ns.swap(layers_list, random_mask, skip_connections)
+    ns.permutate(layers_list, random_mask, skip_connections)
 
     with torch.no_grad():
         _ = model(sample_input)
