@@ -62,9 +62,6 @@ loss_fn = torch.nn.CrossEntropyLoss()
 model.train(True)
 _ = train_one_epoch()
 
-print('STATE DICT')
-print(optimizer.state_dict())
-
 for item in optimizer.state_dict()['state'].values():
   print(item['momentum_buffer'])
 
