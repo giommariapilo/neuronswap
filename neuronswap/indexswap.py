@@ -3,6 +3,7 @@ from torch import nn
 
 def delete(arr: torch.Tensor, idxs: int, axis: int) -> torch.Tensor:
   '''Implementation of np.delete() using only torch'''
+  idxs = idxs if type(idxs) != int else [idxs]
   skip = [i for i in range(arr.size(axis)) if i not in idxs]
   indices = ([slice(None) if i != axis else skip for i in range(arr.ndim)])
   return arr.__getitem__(indices)
