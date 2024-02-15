@@ -10,25 +10,20 @@ def delete(arr: torch.Tensor, idxs: int, axis: int) -> torch.Tensor:
 
 def swap_layer(layer: nn.Module, permutation_indices: torch.Tensor | list[int]):
   weights = layer.weight.data
-  # device = weights.get_device()
-  # weights = weights if device == -1 else weights.cpu()
   eq_weights = weights[permutation_indices,:] # slice containing just the eq neurons
   weights = torch.cat((eq_weights, delete(weights, permutation_indices, axis=0)), dim=0)
-  layer.weight.data = weights #if device == -1 else weights.cuda()
+  layer.weight.data = weights 
   try:
     bias = layer.bias.data
   except:
     return
-  # bias = bias if device == -1 else bias.cpu()
   eq_bias = bias[permutation_indices]
   bias = torch.cat((eq_bias, delete(bias, permutation_indices, axis=0)))
-  layer.bias.data = bias # if device == -1 else bias.cuda()
+  layer.bias.data = bias 
 
 def swap_input_channels(layer: nn.Module, previous_layer: nn.Module, permutation_indices: torch.Tensor | list[int]): # now supporting interface between conv2d and linear
   indexes = permutation_indices
   weights = layer.weight.data
-  # device = weights.get_device()
-  # weights = weights if device == -1 else weights.cpu()
   group_dimension = 1
   if previous_layer.weight.data.shape[0] != weights.shape[1]:
     group_dimension = weights.shape[1] // previous_layer.weight.data.shape[0] # integer division
@@ -43,30 +38,28 @@ def swap_input_channels(layer: nn.Module, previous_layer: nn.Module, permutation
   for stp in reversed(indexes): # itll go out of range if the first range is passed first as it will be deleted 
     weights = delete(weights, stp, axis=1)
   weights = torch.cat((eq_weights, weights), dim=1)
-  layer.weight.data = weights # if device == -1 else weights.cuda()
+  layer.weight.data = weights 
 
 def swap_bn_layer(layer: nn.BatchNorm2d, permutation_indices: torch.Tensor | list[int]):
   weights = layer.weight.data
-  # device = weights.get_device()
-  # weights = weights if device == -1 else weights.cpu()
   eq_weights = weights[permutation_indices] # slice containing just the eq neurons
   weights = torch.cat((eq_weights, delete(weights, permutation_indices, axis=0)))
-  layer.weight.data = weights # if device == -1 else weights.cuda()
+  layer.weight.data = weights 
   
-  bias = layer.bias.data # if device == -1 else layer.bias.data.cpu()
+  bias = layer.bias.data
   eq_bias = bias[permutation_indices] # slice containing just the eq neurons
   bias = torch.cat((eq_bias, delete(bias, permutation_indices, axis=0)))
-  layer.bias.data = bias # if device == -1 else bias.cuda()
+  layer.bias.data = bias 
 
-  avg = layer.running_mean.data # if device == -1 else layer.running_mean.data.cpu()
+  avg = layer.running_mean.data 
   eq_avg = avg[permutation_indices] # slice containing just the eq neurons
   avg = torch.cat((eq_avg, delete(avg, permutation_indices, axis=0)))
-  layer.running_mean.data = avg # if device == -1 else avg.cuda()
+  layer.running_mean.data = avg 
 
-  var = layer.running_var.data # if device == -1 else layer.running_var.data.cpu()
+  var = layer.running_var.data 
   eq_var = var[permutation_indices] # slice containing just the eq neurons
   var = torch.cat((eq_var, delete(var, permutation_indices, axis=0)))
-  layer.running_var.data = var # if device == -1 else var.cuda()
+  layer.running_var.data = var 
 
 def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | list[int]], skip_connections: list[str] = []):
   '''This function takes as inputs the list of layers in the model, a dictionary containing for each layer  
