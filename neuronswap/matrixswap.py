@@ -26,7 +26,7 @@ def swap_input_channels(layer: nn.Module, previous_layer: nn.Module, permutation
   This function swaps the input channels of a layer by means of a matrix multiplication
   in this case the second dimension is swapped, to represent the input channels.
   '''
-  matrix = permutation_matrix
+  matrix = permutation_matrix.transpose(0, 1) # important for asymmetrical permutation matrices
   weights = layer.weight.data
   group_dimension = 1
   # this is in order to take into account the conv into linear interface where oftentimes
