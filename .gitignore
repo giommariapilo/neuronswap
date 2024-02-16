@@ -4,3 +4,5 @@ tests/.pytest_cache/*
 benchmark/*
 data/*
 tests/data/*
+test.py
+state_dict.py
