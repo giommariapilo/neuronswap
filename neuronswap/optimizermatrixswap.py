@@ -4,56 +4,56 @@ from .modulexplore import create_layer_indices_dict
 
 def swap_layer(layer: nn.Module, permutation_matrix: torch.Tensor, index: int, optimizer: optim.Optimizer):
   ''''''
-  weight_shape = optimizer.state_dict()['state'][index]['momentum_buffer'].shape
-  if len(weight_shape) != len(permutation_matrix.shape):
-    reshaped_weight = torch.reshape(optimizer.state_dict()['state'][index]['momentum_buffer'], (weight_shape[0], -1))
-    permuted_weight = torch.matmul(permutation_matrix, reshaped_weight)
-    optimizer.state_dict()['state'][index]['momentum_buffer'] = torch.reshape(permuted_weight, weight_shape)
-  else: 
-    optimizer.state_dict()['state'][index]['momentum_buffer'] = torch.matmul(permutation_matrix, optimizer.state_dict()['state'][index]['momentum_buffer'])
+  for key in optimizer.state_dict()['state'][index].keys():   
+    weight_shape = optimizer.state_dict()['state'][index][key].shape
+    if len(weight_shape) != len(permutation_matrix.shape):
+      reshaped_weight = torch.reshape(optimizer.state_dict()['state'][index][key], (weight_shape[0], -1))
+      permuted_weight = torch.matmul(permutation_matrix, reshaped_weight)
+      optimizer.state_dict()['state'][index][key] = torch.reshape(permuted_weight, weight_shape)
+    else: 
+      optimizer.state_dict()['state'][index][key] = torch.matmul(permutation_matrix, optimizer.state_dict()['state'][index][key])
   try:
     layer.get_parameter('bias')
   except:
     return
   else:
-    optimizer.state_dict()['state'][index+1]['momentum_buffer'] = torch.matmul(permutation_matrix, optimizer.state_dict()['state'][index+1]['momentum_buffer'])
+    for key in optimizer.state_dict()['state'][index].keys():
+      optimizer.state_dict()['state'][index+1][key] = torch.matmul(permutation_matrix, optimizer.state_dict()['state'][index+1][key])
 
 def swap_input_channels(permutation_matrix: torch.Tensor, layer_index: int, previous_layer_index: int, optimizer: optim.Optimizer):
   ''''''
-  matrix = permutation_matrix.transpose(0, 1) # important for asymmetrical permutation matrices
-  weights = optimizer.state_dict()['state'][layer_index]['momentum_buffer']
-  previous_weights = optimizer.state_dict()['state'][previous_layer_index]['momentum_buffer']
-  group_dimension = 1
-  # this is in order to take into account the conv into linear interface where oftentimes
-  # you have outputs from conv connecting to multiple input channels in linear
-  if previous_weights.shape[0] != weights.shape[1]:
-    old_matrix = matrix
-    group_dimension = weights.shape[1] // previous_weights.shape[0] # integer division
-    if weights.shape[1] % previous_weights.shape[0] != 0:
-      raise ValueError(f"Incompatible layers: number of neurons of the first layer does not match number of input channels on the second layer\n{weights.shape[1]}%{previous_weights.shape[0]}={weights.shape[1] % previous_weights.shape[0]}")
-    # extending the permutation matrix to the dimension of the input layer
-    matrix = torch.zeros(weights.shape[1], weights.shape[1])
-    # obtaining the indices of the 1 inside the permutation matrix
-    indexes = (old_matrix==1).nonzero(as_tuple=True)[1]
-    # each of the elements of the permutation matrix is extended by the dimension of the group
-    for j in range(len(indexes)):
-      inde = indexes[j]
-      for i in range(group_dimension):
-        matrix[j * group_dimension + i, inde * group_dimension + i] = 1
+  for key in optimizer.state_dict()['state'][layer_index].keys():
+    matrix = permutation_matrix.transpose(0, 1) # important for asymmetrical permutation matrices
+    weights = optimizer.state_dict()['state'][layer_index][key]
+    previous_weights = optimizer.state_dict()['state'][previous_layer_index][key]
+    group_dimension = 1
+    # this is in order to take into account the conv into linear interface where oftentimes
+    # you have outputs from conv connecting to multiple input channels in linear
+    if previous_weights.shape[0] != weights.shape[1]:
+      old_matrix = matrix
+      group_dimension = weights.shape[1] // previous_weights.shape[0] # integer division
+      if weights.shape[1] % previous_weights.shape[0] != 0:
+        raise ValueError(f"Incompatible layers: number of neurons of the first layer does not match number of input channels on the second layer\n{weights.shape[1]}%{previous_weights.shape[0]}={weights.shape[1] % previous_weights.shape[0]}")
+      # extending the permutation matrix to the dimension of the input layer
+      matrix = torch.zeros(weights.shape[1], weights.shape[1])
+      # obtaining the indices of the 1 inside the permutation matrix
+      indexes = (old_matrix==1).nonzero(as_tuple=True)[1]
+      # each of the elements of the permutation matrix is extended by the dimension of the group
+      for j in range(len(indexes)):
+        inde = indexes[j]
+        for i in range(group_dimension):
+          matrix[j * group_dimension + i, inde * group_dimension + i] = 1
+    if len(optimizer.state_dict()['state'][layer_index][key]) != len(matrix.shape):
+      weight_dim = weights.shape
+      reshaped_weight = weights.reshape((weight_dim[0], weight_dim[1], -1))
+      permuted_weights = torch.empty((reshaped_weight.shape))
+      for i in range(reshaped_weight.shape[-1]):
+        permuted_weights[:,:,i] = torch.matmul(reshaped_weight[:,:,i], matrix)
 
-    
+      optimizer.state_dict()['state'][layer_index][key] = permuted_weights.reshape(weight_dim)
 
-  if len(optimizer.state_dict()['state'][layer_index]['momentum_buffer']) != len(matrix.shape):
-    weight_dim = weights.shape
-    reshaped_weight = weights.reshape((weight_dim[0], weight_dim[1], -1))
-    permuted_weights = torch.empty((reshaped_weight.shape))
-    for i in range(reshaped_weight.shape[-1]):
-      permuted_weights[:,:,i] = torch.matmul(reshaped_weight[:,:,i], matrix)
-
-    optimizer.state_dict()['state'][layer_index]['momentum_buffer'] = permuted_weights.reshape(weight_dim)
-
-  else:
-    optimizer.state_dict()['state'][layer_index]['momentum_buffer'] = torch.matmul(weights, matrix)
+    else:
+      optimizer.state_dict()['state'][layer_index][key] = torch.matmul(weights, matrix)
 
 def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], model: nn.Module, optimizer: optim.Optimizer,skip_connections: list[str] = []):
   ''''''
