@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+import warnings
 from .modulexplore import get_layers_list, get_skipped_layers
 from .optimizermatrixswap import swap as moswap
 from .optimizerindexswap import swap as ioswap
@@ -14,6 +14,9 @@ def permute(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor |
   implementations of the swap method to swap the neurons. The last layer won't be permuted as it 
   will change the output of the network. If it receives a list  of skip connections, those 
   layers are not permuted as permutation of skip connection layers is not supported yet.'''
+  if skip_connections != []:
+    warnings.warn(f"Warning: some layers are involved in a skip connection, their neurons won't be permuted")
+  
   type_check = None
   shape_check = 0
   for permutation in permutations.values():
