@@ -8,6 +8,14 @@ def get_layers_list(graph: fx.Graph, model: nn.Module):
   layers_list = [('.'.join(node.name.split('_')), layers_dict['.'.join(node.name.split('_'))]) for node in graph.nodes if '.'.join(node.name.split('_')) in layers_dict.keys() and isinstance(layers_dict['.'.join(node.name.split('_'))], (nn.Linear, nn.Conv2d, nn.BatchNorm2d))]
   return layers_list 
 
+def recursive_call(parent, parents, layers):
+  for subparent in parent: # if the parent is not an instance of a linear or convolutional layer, keep searching
+    if isinstance(subparent, tuple):
+      recursive_call(subparent, parents, layers)
+    elif isinstance(subparent, node.Node):
+      # print(subparent)
+      parent_search(parents, subparent, layers)
+
 def parent_search(parents: list, node: node.Node, layers: list[tuple]):
   '''Recursive function to find the nearest linear or 
   convolutional parent node for a given node. Takes as 
@@ -17,8 +25,9 @@ def parent_search(parents: list, node: node.Node, layers: list[tuple]):
   if name in layers_dict.keys() and isinstance(layers_dict[name], (nn.Linear, nn.Conv2d)):
     parents.append(name)
   else: 
-    for parent in node.args: # if the parent is not an instance of a linear or convolutional layer, keep searching
-      parent_search(parents, parent, layers)
+    # for parent in node.args: # if the parent is not an instance of a linear or convolutional layer, keep searching
+    #   parent_search(parents, parent, layers)
+    recursive_call(node.args, parents, layers)
   return
 
 def get_skipped_layers(graph: fx.Graph, layers: list[tuple]):
