@@ -1,8 +1,8 @@
-neuronswap/__pycache__/*
-tests/__pycache__/*
-tests/.pytest_cache/*
-benchmark/*
-data/*
-tests/data/*
+neuronswap/__pycache__
+tests/__pycache__
+tests/.pytest_cache
+benchmark
+data
+tests/data
 test.py
 state_dict.py
