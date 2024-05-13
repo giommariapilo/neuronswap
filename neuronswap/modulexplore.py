@@ -49,12 +49,29 @@ def get_skipped_layers(graph: fx.Graph, layers: list[tuple]):
   skipped_layers = list(set(skipped_layers))
   return skipped_layers
 
+def sequential_search(sequential_name, sequential, layer_indices, index):
+  for i in range(len(sequential)):
+    if isinstance(sequential[i], (nn.Linear, nn.BatchNorm2d, nn.Conv2d)):
+      layer_indices[f'{sequential_name}.{i}'] = index
+      index += 1
+      try:
+        sequential[i].get_parameter('bias')
+      except:
+        continue 
+      else:
+        index += 1
+  
+  return index
+
+
 def create_layer_indices_dict(model: nn.Module) -> dict[str, int]:
   ''''''
   layer_indices = {}
   index = 0
   for name, layer in model.named_children():
-    if isinstance(layer, (nn.Linear, nn.BatchNorm2d, nn.Conv2d)):
+    if isinstance(layer, nn.Sequential):
+      index = sequential_search(name, layer, layer_indices, index)
+    elif isinstance(layer, (nn.Linear, nn.BatchNorm2d, nn.Conv2d)):
       layer_indices[name] = index
       index += 1
       try:
