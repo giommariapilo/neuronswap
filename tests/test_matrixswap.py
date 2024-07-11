@@ -453,3 +453,36 @@ def test_permutate_resnet18():
 
   assert torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-5)
 
+# def test_permutate_resnet18_inverted():
+#   model = resnet18()
+
+#   permutation_matrix = {}
+#   # i create the permutation matrix automatically, the same for each layer
+#   for name, layer in model.named_modules():
+#     if isinstance(layer, (nn.Conv2d, nn.Linear)):
+#       matrix = torch.zeros(layer.weight.data.shape[0], layer.weight.data.shape[0], dtype = torch.float32)
+#       for i in range(layer.weight.data.shape[0]):
+#         if 0 == i:
+#           matrix[i, 2] = 1
+#         elif 2 == i:
+#           matrix[i, 0] = 1
+#         else:
+#           matrix[i, i] = 1
+#       if matrix.shape == torch.tensor([2, 2]):
+#         matrix = torch.tensor([[0, 1],
+#                                [1, 0]],
+#                               dtype = torch.float32)
+#       permutation_matrix[name] = matrix
+#   graph = fx.symbolic_trace(model).graph
+#   layers_list = modx.get_layers_list(graph, model)
+#   skip_connections = modx.get_skipped_layers_inverted(graph, layers_list)
+  
+#   input = torch.rand([1,3,244,244])
+
+#   output_before = model(input)
+
+#   mswap.swap_inverted(layers_list, permutation_matrix, skip_connections)
+
+#   output_after = model(input)
+
+#   assert torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-5)
