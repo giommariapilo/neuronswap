@@ -95,3 +95,24 @@ def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor], sk
         swap_bn_layer(next_module, mask)
         _, next_module = layers_list[i + 2]
         swap_input_channels(next_module, module, mask)
+
+def swap_inverted(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | list[int]], skip_connections: list[str] = []):
+  print('not implemented')
+  # last_swapped_layer = ''
+  # # doing it in inverse order to swap along input channels
+  # for i in range(len(layers_list)-1,-1,-1):
+  #   name, module = layers_list[i]
+  #   if i != 0 and name not in skip_connections and name in permutations.keys():
+  #     mask = permutations[name]
+  #     if isinstance(module, (nn.Linear, nn.Conv2d)):
+  #       _, previous_module = layers_list[i - 1]
+  #       swap_input_channels(module, previous_module, mask)
+  #       last_swapped_layer = (name, module)
+  #     elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
+  #       name, module = last_swapped_layer # this is important ... if the current layer is not linerar or convolutional,                                       
+  #     if isinstance(previous_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
+  #       swap_layer(previous_module, mask)
+  #     elif isinstance(previous_module, (nn.BatchNorm2d)):
+  #       swap_bn_layer(previous_module, mask)
+  #       _, previous_module = layers_list[i - 2]
+  #       swap_layer(previous_module, mask)

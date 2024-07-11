@@ -383,6 +383,34 @@ def test_swap_resnet():
 
   assert torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-6)
 
+def test_swap_resnet_inverted():
+  model = resnet18()
+  model.fc = nn.Linear(512, 10)
+  eq_indexes = {'layer1.0.conv1': [2,3], 
+                'layer1.1.conv1': [2,3], 
+                'layer2.0.conv1': [2,3], 
+                'layer2.1.conv1': [2,3], 
+                'layer3.0.conv1': [2,3], 
+                'layer3.1.conv1': [2,3], 
+                'layer4.0.conv1': [2,3], 
+                'layer4.1.conv1': [2,3], }
+
+  graph = fx.symbolic_trace(model).graph
+  layers_list = modx.get_layers_list(graph, model)
+  skip_connections = modx.get_skipped_layers_inverted(graph, layers_list)
+
+  input = torch.rand([1,3,244,244])
+
+  model.train(False)
+
+  output_before = model(input)
+
+  iswap.swap_inverted(layers_list, eq_indexes, skip_connections)
+
+  output_after = model(input)
+
+  assert torch.allclose(output_before, output_after, rtol=1e-5, atol=1e-6), f'outputs do not match: {output_before}\nvs\n{output_after}'
+
 def test_swap_no_indexes():
   model = ConvBN()
 

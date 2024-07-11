@@ -61,6 +61,9 @@ def swap_bn_layer(layer: nn.BatchNorm2d, permutation_indices: torch.Tensor | lis
   var = torch.cat((eq_var, delete(var, permutation_indices, axis=0)))
   layer.running_var.data = var 
 
+def is_depthwise_conv(conv):
+    return conv.groups == conv.in_channels == conv.out_channels
+
 def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | list[int]], skip_connections: list[str] = []):
   '''This function takes as inputs the list of layers in the model, a dictionary containing for each layer  
   the indexes of the neurons to be moved to the top of the layer, and an optional list of layers involved in 
@@ -82,8 +85,40 @@ def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | li
       elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
         name, module = last_swapped_layer # this is important ... if the current layer is not linerar or convolutional,                                       
       if isinstance(next_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
+        if isinstance(next_module, (nn.Conv2d)) and is_depthwise_conv(next_module):
+          swap_layer(next_module, mask)
         swap_input_channels(next_module, module, mask)
       elif isinstance(next_module, (nn.BatchNorm2d)):
         swap_bn_layer(next_module, mask)
         _, next_module = layers_list[i + 2]
+        if isinstance(next_module, (nn.Conv2d)) and is_depthwise_conv(next_module):
+          swap_layer(next_module, mask)
         swap_input_channels(next_module, module, mask)
+
+def swap_inverted(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | list[int]], skip_connections: list[str] = []):
+  
+  last_swapped_layer = ''
+  # doing it in inverse order to swap along input channels
+  for i in range(len(layers_list)-1,-1,-1):
+    name, module = layers_list[i]
+    if i != 0 and name not in skip_connections and name in permutations.keys():
+      # print(f"Swapping layer {name}")
+      mask = permutations[name].long() if type(permutations[name]) == torch.Tensor else permutations[name]
+      if isinstance(module, (nn.Linear, nn.Conv2d)):
+        _, previous_module = layers_list[i - 1]
+        if isinstance(module, (nn.Conv2d)) and is_depthwise_conv(module):
+          swap_layer(module, mask)
+        else:
+          swap_input_channels(module, previous_module, mask)
+        last_swapped_layer = (name, module)
+      elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
+        name, module = last_swapped_layer # this is important ... if the current layer is not linerar or convolutional,                                       
+      if isinstance(previous_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
+        swap_layer(previous_module, mask)
+      elif isinstance(previous_module, (nn.BatchNorm2d)):
+        swap_bn_layer(previous_module, mask)
+        _, previous_module = layers_list[i - 2]
+        swap_layer(previous_module, mask)
+    # else:
+    #   print(f"Skipping layer {name}")
+
