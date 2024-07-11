@@ -69,7 +69,7 @@ def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | li
         name, module = last_swapped_layer # this is important ... if the current layer is not linerar or convolutional,                                       
       if isinstance(next_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
         index = layer_indices[next_name]
-        previous_index = layer_indices[module]
+        previous_index = layer_indices[name]
         swap_input_channels(mask, index, previous_index, optimizer)
       elif isinstance(next_module, (nn.BatchNorm2d)):
         index = layer_indices[next_name]
@@ -78,4 +78,29 @@ def swap(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | li
         index = layer_indices[next_name]
         previous_index = layer_indices[name]
         swap_input_channels(mask, index, previous_index, optimizer)
+
+def swap_inverted(layers_list: list[nn.Module], permutations: dict[str, torch.Tensor | list[int]], model: nn.Module, optimizer: optim.Optimizer,skip_connections: list[str] = []):
+  ''''''
+  layer_indices = create_layer_indices_dict(model)
+  last_swapped_layer = ''
+  for i in range(len(layers_list)-1,-1,-1):
+    name, module = layers_list[i]
+    if i != 0 and name not in skip_connections and name in permutations.keys():
+      mask = permutations[name].long() if type(permutations[name]) == torch.Tensor else permutations[name]
+      if isinstance(module, (nn.Linear, nn.Conv2d)):
+        index = layer_indices[name]
+        previous_name, previous_module = layers_list[i - 1]
+        previous_index = layer_indices[previous_name]
+        swap_input_channels(mask, index, previous_index, optimizer)
+        last_swapped_layer = (name, module)
+      elif not isinstance(module, nn.BatchNorm2d) and last_swapped_layer != '': 
+        name, module = last_swapped_layer # this is important ... if the current layer is not linerar or convolutional,                                       
+      if isinstance(previous_module, (nn.Linear, nn.Conv2d)) and not isinstance(module, nn.BatchNorm2d):
+        swap_layer(previous_module, mask, previous_index, optimizer)
+      elif isinstance(previous_module, (nn.BatchNorm2d)):
+        previous_index = layer_indices[previous_name]
+        swap_bn_layer(mask, previous_index, optimizer)
+        previous_name, previous_module = layers_list[i - 2]
+        previous_index = layer_indices[previous_name]
+        swap_layer(previous_module, mask, previous_index, optimizer)
   

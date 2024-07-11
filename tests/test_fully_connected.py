@@ -56,7 +56,18 @@ def generate_random_mask_with_permutation(linears, names):
     random_mask = {}
     permutations = {}
     for linear, name in zip(linears, names):
-        num_neurons = linear.output.shape[0]
+        num_neurons = linear.weight.shape[0]
+        permutation = torch.randperm(num_neurons)
+        num_eq_neurons = rd.randint(0, num_neurons - 1)
+        random_mask[name] = permutation[:num_eq_neurons].sort().values
+        permutations[name] = torch.cat([permutation[:num_eq_neurons].sort().values, permutation[num_eq_neurons:].sort().values])
+    return random_mask, permutations
+
+def generate_random_mask_with_permutation_inverted(linears, names):
+    random_mask = {}
+    permutations = {}
+    for linear, name in zip(linears, names):
+        num_neurons = linear.weight.shape[1]
         permutation = torch.randperm(num_neurons)
         num_eq_neurons = rd.randint(0, num_neurons - 1)
         random_mask[name] = permutation[:num_eq_neurons].sort().values
@@ -100,3 +111,14 @@ def test_fully_connected_random_swap():
         permutation = permutations[name]
         manually_swapped_output = pre_swapped_output[permutation]
         assert torch.equal(manually_swapped_output, swapped_outputs[name]), f"{name}'s outputs do not match"
+
+def test_fully_connected_random_swap_inverted():
+    set_seed(3)
+    model = FCnet()
+    graph = torch.fx.symbolic_trace(model).graph
+    layers_list = ns.get_layers_list(graph, model)
+    input = torch.rand(10,5)
+    output = model(input)
+    ns.permute_inverted(layers_list, {'fc1': torch.tensor([1,4]), 'fc2': torch.tensor([3,4]), 'fc3': torch.tensor([2,3])})
+    output2 = model(input)
+    print(torch.allclose(output, output2))
