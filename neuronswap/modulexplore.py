@@ -49,6 +49,42 @@ def get_skipped_layers(graph: fx.Graph, layers: list[tuple]):
   skipped_layers = list(set(skipped_layers))
   return skipped_layers
 
+def recursive_call_children(child, children, layers):
+  for subchild in child: # if the parent is not an instance of a linear or convolutional layer, keep searching
+    if isinstance(subchild, tuple):
+      recursive_call(subchild, children, layers)
+    elif isinstance(subchild, node.Node):
+      # print(subparent)
+      child_search(children, subchild, layers)
+
+def child_search(children, node, layers):
+  layers_dict = dict(layers)
+  name = '.'.join(node.name.split('_')) # node names and layer names are the same but with different separators '_' for nodes and '.' for layers
+  if name in layers_dict.keys() and isinstance(layers_dict[name], (nn.Linear, nn.Conv2d)):
+    children.append(name)
+  else: 
+    # for parent in node.args: # if the parent is not an instance of a linear or convolutional layer, keep searching
+    #   parent_search(parents, parent, layers)
+    recursive_call_children(node.users, children, layers)
+  return
+
+def get_skipped_layers_inverted(graph: fx.Graph, layers: list[tuple]):
+  residual_connections = []
+  for node in graph.nodes:
+    # print(node.name, node.users)
+    try:
+      children = [child.name for child in node.users]
+    except:
+      children = []
+    if len(children) >= 2: residual_connections.append(node)
+  # print(residual_connections)
+  skipped_layers = []
+  for node in residual_connections:
+    child_search(skipped_layers, node, layers)
+
+  skipped_layers = list(set(skipped_layers))
+  return skipped_layers
+
 def create_layer_indices_dict(model: nn.Module) -> dict[str, int]:
   ''''''
   layer_indices = {}
@@ -64,3 +100,21 @@ def create_layer_indices_dict(model: nn.Module) -> dict[str, int]:
       else:
         index += 1
   return layer_indices
+
+# if __name__ == '__main__':
+#   import torch
+#   import os
+#   import sys
+#   from torchvision.models import resnet18
+#   SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+#   sys.path.append(os.path.dirname(SCRIPT_DIR))
+
+#   model = resnet18()
+#   model.fc = nn.Linear(512, 10)
+
+
+#   graph = torch.fx.symbolic_trace(model).graph
+
+#   layers_list = get_layers_list(graph, model)
+#   skip_connections = get_skipped_layers_inverted(graph, layers_list)
+#   print(skip_connections)
